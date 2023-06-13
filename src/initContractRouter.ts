@@ -10,11 +10,11 @@ type RpcRouterProtocol<
 > = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
         ? Env extends "server"
-            ? (args: Extend) => _Returns
-            : () => _Returns
+            ? (args: Extend) => undefined | void
+            : () => undefined | void
         : Env extends "server"
-            ? (args: Extend & ArgsType<T[K]["args"], undefined>) => _Returns
-            : (args: ArgsType<T[K]["args"], undefined>) => _Returns;
+            ? (args: { returnValue: (returnValue: _Returns) => void } & Extend & ArgsType<T[K]["args"], undefined>) => undefined | void
+            : (args: { returnValue: (returnValue: _Returns) => void } & ArgsType<T[K]["args"], undefined>) => undefined | void;
 }
 
 export function initContractRouter<
@@ -51,19 +51,22 @@ export function initContractRouter<
             if (env === "server") {
                 _args.player = args.shift() as Player;
 
-                if (_rpc?.returns instanceof z.ZodVoid) bindings[contract](_args);
-                else {
-                    const returns = await bindings[contract](_args);
-                    (opts.emit as EmitFn<Player, "server">)(_args.player, rpcName, returns);
+                if (!(_rpc?.returns instanceof z.ZodVoid)) {
+                    _args.returnValue = (returnValue: typeof _rpc.returns) => {
+                        (opts.emit as EmitFn<Player, "server">)(_args.player, rpcName, returnValue);
+                    };
                 }
 
+                bindings[contract](_args);
                 return;
             }
 
-            if (_rpc?.returns instanceof z.ZodVoid) bindings[contract](_args);
-            else {
-                const returns = await bindings[contract](_args);
-                (opts.emit as EmitFn<Player, "client">)(rpcName, returns);
+            if (!(_rpc.returns instanceof z.ZodVoid)) {
+                if (!(_rpc?.returns instanceof z.ZodVoid)) {
+                    _args.returnValue = (returnValue: typeof _rpc.returns) => {
+                        (opts.emit as EmitFn<Player, "client">)(rpcName, returnValue);
+                    };
+                }
             }
         });
     }
