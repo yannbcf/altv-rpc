@@ -8,7 +8,7 @@ export type RpcResult<T> = {
     success: false;
 }
 
-export type RpcProtocol<
+type RpcProtocol<
     T extends RpcContract,
     Env extends Envs,
     Player,
