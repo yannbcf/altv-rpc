@@ -6,7 +6,7 @@
 
 - End to end type safety
 - RPC-like client-server interface
-- Tiny bundle size
+- Tiny bundle size (1.3kb gzipped)
 - No code generation
 - Zod support for runtime type checks
 
