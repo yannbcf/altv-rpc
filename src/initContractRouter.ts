@@ -5,16 +5,15 @@ import { z } from "zod";
 type RpcRouterProtocol<
     T extends RpcContract,
     Env extends Envs,
-    Extend extends {},
-    _Returns = ArgsType<T[keyof T]["returns"], void>
+    Extend extends {}
 > = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
         ? Env extends "server"
             ? (args: Extend) => undefined | void
             : () => undefined | void
         : Env extends "server"
-            ? (args: { returnValue: (returnValue: _Returns) => void } & Extend & ArgsType<T[K]["args"], undefined>) => undefined | void
-            : (args: { returnValue: (returnValue: _Returns) => void } & ArgsType<T[K]["args"], undefined>) => undefined | void;
+            ? (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & Extend & ArgsType<T[K]["args"], undefined>) => undefined | void
+            : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined>) => undefined | void;
 }
 
 export function initContractRouter<

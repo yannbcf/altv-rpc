@@ -1,5 +1,11 @@
 # @yannbcf/altv-rpc
 
+## 0.0.3
+
+### Patch Changes
+
+- Fix the rpc router protocol return value type inference
+
 ## 0.0.1 - 0.0.2
 
 ### Patch Changes
