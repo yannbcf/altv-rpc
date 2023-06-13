@@ -44,7 +44,7 @@ export function initContract<
         const rpcName = `rpc:${contract}`;
 
         rpc[contract] = ((...args: unknown[]) => {
-            if (_rpc.returns instanceof z.ZodVoid) {
+            if (_rpc.returns === undefined || _rpc.returns instanceof z.ZodVoid || _rpc.returns instanceof z.ZodUndefined) {
                 if (env === "server") {
                     const player = args.shift() as Player;
                     (opts.emit as EmitFn<Player, "server">)(player, rpcName, ...args);
@@ -68,6 +68,7 @@ export function initContract<
                 };
 
                 opts.once(rpcName, callback);
+
                 if (env === "server") {
                     const player = args.shift() as Player;
                     (opts.emit as EmitFn<Player, "server">)(player, rpcName, ...args);

@@ -49,24 +49,20 @@ export function initContractRouter<
 
             if (env === "server") {
                 _args.player = args.shift() as Player;
+            }
 
-                if (!(_rpc?.returns instanceof z.ZodVoid)) {
-                    _args.returnValue = (returnValue: typeof _rpc.returns) => {
+            if (!(_rpc?.returns instanceof z.ZodVoid) || !(_rpc?.returns instanceof z.ZodUndefined)) {
+                _args.returnValue = (returnValue: typeof _rpc.returns) => {
+                    if (env === "server") {
                         (opts.emit as EmitFn<Player, "server">)(_args.player, rpcName, returnValue);
-                    };
-                }
-
-                bindings[contract](_args);
-                return;
+                    }
+                    else {
+                        (opts.emit as EmitFn<Player, "web" | "client">)(rpcName, returnValue);
+                    }
+                };
             }
 
-            if (!(_rpc.returns instanceof z.ZodVoid)) {
-                if (!(_rpc?.returns instanceof z.ZodVoid)) {
-                    _args.returnValue = (returnValue: typeof _rpc.returns) => {
-                        (opts.emit as EmitFn<Player, "client">)(rpcName, returnValue);
-                    };
-                }
-            }
+            bindings[contract](_args);
         });
     }
 }
