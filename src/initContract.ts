@@ -8,12 +8,19 @@ export type RpcResult<T> = {
     success: false;
 }
 
-export type RpcProtocol<T extends RpcContract, Env extends "web" | "client" | "server", Player> = {
+export type RpcProtocol<
+    T extends RpcContract,
+    Env extends Envs,
+    Player,
+    _Returns = ArgsType<T[keyof T]["returns"], void>
+> = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
-        ? (player: Player) => ArgsType<T[K]["returns"], void>
+        ? Env extends "server"
+            ? (player: Player) => T[K]["returns"] extends z.ZodVoid ? _Returns : Promise<RpcResult<_Returns>>
+            : () => T[K]["returns"] extends z.ZodVoid ? _Returns : Promise<RpcResult<_Returns>>
         : Env extends "server"
-            ? (player: Player, args: ArgsType<T[K]["args"], undefined>) => Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
-            : (args: ArgsType<T[K]["args"], undefined>) => Promise<RpcResult<ArgsType<T[K]["returns"], void>>>;
+            ? (player: Player, args: ArgsType<T[K]["args"], undefined>) => T[K]["returns"] extends z.ZodVoid ? _Returns : Promise<RpcResult<_Returns>>
+            : (args: ArgsType<T[K]["args"], undefined>) => T[K]["returns"] extends z.ZodVoid ? _Returns : Promise<RpcResult<_Returns>>;
 };
 
 export function initContract<

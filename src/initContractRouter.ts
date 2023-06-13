@@ -2,14 +2,19 @@
 import type { ArgsType, Envs, Callback, EmitFn, RpcContract } from "./types.ts";
 import { z } from "zod";
 
-type RpcRouterProtocol<T extends RpcContract, Env extends "web" | "client" | "server", extend extends {}> = {
+type RpcRouterProtocol<
+    T extends RpcContract,
+    Env extends Envs,
+    Extend extends {},
+    _Returns = ArgsType<T[keyof T]["returns"], void>
+> = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
         ? Env extends "server"
-            ? (args: extend) => ArgsType<T[K]["returns"], void>
-            : () => ArgsType<T[K]["returns"], void>
+            ? (args: Extend) => _Returns
+            : () => _Returns
         : Env extends "server"
-            ? (args: extend & ArgsType<T[K]["args"], undefined>) => ArgsType<T[K]["returns"], void>
-            : (args: extend & ArgsType<T[K]["args"], undefined>) => ArgsType<T[K]["returns"], void>;
+            ? (args: Extend & ArgsType<T[K]["args"], undefined>) => _Returns
+            : (args: ArgsType<T[K]["args"], undefined>) => _Returns;
 }
 
 export function initContractRouter<
