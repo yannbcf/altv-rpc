@@ -45,10 +45,118 @@ The supported communications are:
 
 
 > [Shared](./examples/client-server/shared.ts)
-![shared](./public/rpc-shared.png)
+```ts
+import { contract } from "@yannbcf/altv-rpc";
+import { z } from "zod";
+
+export const fromClientToServerContract = contract({
+    noResponse: {
+        args: z.object({ apples: z.number() })
+    },
+    getServerUptime: {
+        args: z.object({
+            playerId: z.number(),
+        }),
+        returns: z.number(),
+    },
+    getServerUptime2: {
+        returns: z.number(),
+    },
+});
+
+export const fromServerToClientContract = contract({
+    noResponse: {
+        args: z.object({ apples: z.number() })
+    },
+    getClientUptime: {
+        args: z.object({
+            playerId: z.number(),
+        }),
+        returns: z.number(),
+    },
+    getClientUptime2: {
+        returns: z.number(),
+    },
+});
+```
 
 > [Client](./examples/client-server/client.ts)
-![client](./public/rpc-client.png)
+```ts
+import { fromClientToServerContract, fromServerToClientContract } from "./shared.ts";
+import { initContractRouter, initContract } from "@yannbcf/altv-rpc";
+import * as alt from "alt-client";
+
+initContractRouter("client", fromServerToClientContract, {
+    on: alt.onServer,
+    emit: alt.emitServerRaw
+}, {
+    noResponse: (args) => {
+        console.log(args.apples);
+    },
+    getClientUptime: ({ returnValue, playerId }) => {
+        console.log(playerId);
+        returnValue(0);
+    },
+    getClientUptime2: () => {
+        //
+    }
+});
+
+const rpc = initContract("client", fromClientToServerContract, {
+    once: alt.onceServer,
+    off: alt.offServer,
+    emit: alt.emitServerRaw,
+});
+
+const result = await rpc.getServerUptime({ playerId: 0 });
+if (result.success) {
+    console.log(result.data);
+}
+
+const result2 = await rpc.getServerUptime2();
+if (result2.success) {
+    console.log(result2.data);
+}
+```
 
 > [Server](./examples/client-server/server.ts)
-![server](./public/rpc-server.png)
+```ts
+import { fromClientToServerContract, fromServerToClientContract } from "./shared.ts";
+import { initContractRouter, initContract } from "@yannbcf/altv-rpc";
+import * as alt from "alt-server";
+
+initContractRouter("server", fromClientToServerContract, {
+    on: alt.onClient,
+    emit: alt.emitClientRaw
+}, {
+    noResponse: ({ player, apples }) => {
+        console.log(player, apples);
+    },
+    getServerUptime: ({ returnValue, player, playerId }) => {
+        console.log(player, playerId);
+        returnValue(0);
+    },
+    getServerUptime2: ({ player }) => {
+        console.log(player);
+    }
+});
+
+const rpc = initContract("server", fromServerToClientContract, {
+    once: alt.onceClient,
+    off: alt.offClient,
+    emit: alt.emitClientRaw
+});
+
+const player = alt.Player.getByID(-Infinity) as alt.Player;
+rpc.getClientUptime(player, { playerId: player.id });
+
+const result = await rpc.getClientUptime(player, { playerId: player.id });
+if (result.success) {
+    console.log(result.data);
+}
+
+const result2 = await rpc.getClientUptime2(player);
+if (result2.success) {
+    console.log(result2.data);
+}
+```
