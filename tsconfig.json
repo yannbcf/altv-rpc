@@ -1,0 +1,27 @@
+{
+    "compileOnSave": false,
+    "compilerOptions": {
+        "strictBindCallApply": true,
+        "strictNullChecks": true,
+        "alwaysStrict": true,
+        "strict": true,
+        "noEmit": true,
+        "target": "ESNext",
+        "module": "ESNext",
+        "skipLibCheck": false,
+        "moduleResolution": "nodenext",
+        "allowImportingTsExtensions": true,
+        "outDir": "./dist",
+        "typeRoots": ["node_modules/@types", "node_modules/@altv"],
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedIndexedAccess": true,
+        "experimentalDecorators": false,
+        "emitDecoratorMetadata": false,
+        "noImplicitOverride": true,
+        "noUnusedParameters": true,
+        "noErrorTruncation": true,
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "noImplicitAny": true
+    }
+}
