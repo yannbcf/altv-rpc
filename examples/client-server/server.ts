@@ -6,6 +6,9 @@ initContractRouter("server", fromClientToServerContract, {
     on: alt.onClient,
     emit: alt.emitClientRaw
 }, {
+    noResponse: ({ player, apples }) => {
+        console.log(player, apples);
+    },
     getServerUptime: ({ returnValue, player, playerId }) => {
         console.log(player, playerId);
         returnValue(0);

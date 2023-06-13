@@ -5,6 +5,7 @@
 ## Features
 
 - End to end type safety
+- Classic one-direction events
 - RPC-like client-server interface
 - Tiny bundle size (1.3kb gzipped)
 - No code generation

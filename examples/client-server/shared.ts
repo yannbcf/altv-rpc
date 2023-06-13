@@ -2,6 +2,9 @@ import { contract } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
 export const fromClientToServerContract = contract({
+    noResponse: {
+        args: z.object({ apples: z.number() })
+    },
     getServerUptime: {
         args: z.object({
             playerId: z.number(),
@@ -14,6 +17,9 @@ export const fromClientToServerContract = contract({
 });
 
 export const fromServerToClientContract = contract({
+    noResponse: {
+        args: z.object({ apples: z.number() })
+    },
     getClientUptime: {
         args: z.object({
             playerId: z.number(),
