@@ -108,11 +108,16 @@ const rpc = initContract("client", fromClientToServerContract, {
     emit: alt.emitServerRaw,
 });
 
+// sends an event
+rpc.noResponse({ apples: 1 });
+
+// sends an event and wait for a response (timeout after 2 seconds)
 const result = await rpc.getServerUptime({ playerId: 0 });
 if (result.success) {
     console.log(result.data);
 }
 
+// sends an event and wait for a response (timeout after 2 seconds)
 const result2 = await rpc.getServerUptime2();
 if (result2.success) {
     console.log(result2.data);
@@ -147,14 +152,19 @@ const rpc = initContract("server", fromServerToClientContract, {
     emit: alt.emitClientRaw
 });
 
-const player = alt.Player.getByID(-Infinity) as alt.Player;
-rpc.getClientUptime(player, { playerId: player.id });
 
+const player = alt.Player.getByID(-Infinity) as alt.Player;
+
+// sends an event
+rpc.noResponse(player, { apples: 1 });
+
+// sends an event and wait for a response (timeout after 2 seconds)
 const result = await rpc.getClientUptime(player, { playerId: player.id });
 if (result.success) {
     console.log(result.data);
 }
 
+// sends an event and wait for a response (timeout after 2 seconds)
 const result2 = await rpc.getClientUptime2(player);
 if (result2.success) {
     console.log(result2.data);
