@@ -44,11 +44,11 @@ The supported communications are:
 ``client <-> server``
 
 
-- Shared
+> [Shared](./examples/client-server/shared.ts)
 ![shared](./public/rpc-shared.png)
 
-- Client
+> [Client](./examples/client-server/client.ts)
 ![client](./public/rpc-client.png)
 
-- Server
+> [Server](./examples/client-server/server.ts)
 ![server](./public/rpc-server.png)
