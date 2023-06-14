@@ -13,6 +13,7 @@ export type EmitFn<Player, TEnv extends Envs> = TEnv extends "server"
 
 export type RpcContract = {
     [contract: string]: {
+        eventName?: string | number;
         args?: z.AnyZodObject,
         returns?: z.ZodType<AllowedAny, AllowedAny>
     }

@@ -42,7 +42,8 @@ export function initContractRouter<
     for (const contract in rpcContract) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const _rpc = rpcContract[contract]!;
-        const rpcName = `rpc:${contract}`;
+        const rpcName = _rpc.eventName !== undefined ?
+            `${_rpc.eventName}` : contract;
 
         opts.on(rpcName, async (...args) => {
             const parser = _rpc?.args;

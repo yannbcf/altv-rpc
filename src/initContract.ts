@@ -48,7 +48,8 @@ export function initContract<
     for (const contract in rpcContract) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const _rpc = rpcContract[contract]!;
-        const rpcName = `rpc:${contract}`;
+        const rpcName = _rpc.eventName !== undefined ?
+            `${_rpc.eventName}` : contract;
 
         rpc[contract] = ((...args: unknown[]) => {
             if (_rpc.returns === undefined || _rpc.returns instanceof z.ZodVoid || _rpc.returns instanceof z.ZodUndefined) {
