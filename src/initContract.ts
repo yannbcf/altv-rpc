@@ -30,7 +30,7 @@ type RpcProtocol<
                 : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>;
 };
 
-export function initContract<
+export function init<
     Env extends Envs,
     T extends RpcContract,
     Player extends import("alt-server").Player

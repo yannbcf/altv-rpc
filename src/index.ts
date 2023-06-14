@@ -1,3 +1,4 @@
-export { contract } from "./contract.ts";
-export { initContract } from "./initContract.ts";
-export { initContractRouter } from "./initContractRouter.ts";
+export { $client } from "./client/index.ts";
+export { $server } from "./server/index.ts";
+
+export * as contract from "./exports.ts";

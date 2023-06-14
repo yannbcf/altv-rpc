@@ -24,7 +24,7 @@ type RpcRouterProtocol<
                 : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined>) => undefined | void;
 }
 
-export function initContractRouter<
+export function setupRouter<
     T extends RpcContract,
     Env extends Envs,
     Player extends import("alt-server").Player
