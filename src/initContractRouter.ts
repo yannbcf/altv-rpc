@@ -9,11 +9,19 @@ type RpcRouterProtocol<
 > = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
         ? Env extends "server"
-            ? (args: Extend) => undefined | void
-            : () => undefined | void
+            ? ArgsType<T[K]["returns"], undefined> extends undefined
+                ? (args: Extend) => undefined | void
+                : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & Extend) => undefined | void
+            : ArgsType<T[K]["returns"], undefined> extends undefined
+                ? () => undefined | void
+                : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void }) => undefined | void
         : Env extends "server"
-            ? (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & Extend & ArgsType<T[K]["args"], undefined>) => undefined | void
-            : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined>) => undefined | void;
+            ? ArgsType<T[K]["returns"], undefined> extends undefined
+                ? (args: Extend & ArgsType<T[K]["args"], undefined>) => undefined | void
+                : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & Extend & ArgsType<T[K]["args"], undefined>) => undefined | void
+            : ArgsType<T[K]["returns"], undefined> extends undefined
+                ? (args: ArgsType<T[K]["args"], undefined>) => undefined | void
+                : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined>) => undefined | void;
 }
 
 export function initContractRouter<
