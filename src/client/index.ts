@@ -1,2 +1,1 @@
-// export * as $client from "./alt.ts";
-export const $client = null;
+export * as $client from "./alt.ts";
