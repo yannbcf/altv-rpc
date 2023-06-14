@@ -49,7 +49,7 @@ export function initContractRouter<
 
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
-            const _args = parser ? parser.safeParse(args[opts.env === "server" ? 1 : 0]).data ?? undefined : args ?? {};
+            const _args = parser ? parser.safeParse(args[env === "server" ? 1 : 0]).data ?? undefined : args ?? {};
             if (parser && _args === undefined) {
                 console.warn("FAILED TO PARSE");
                 return;
