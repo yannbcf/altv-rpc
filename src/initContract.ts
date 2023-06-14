@@ -16,17 +16,17 @@ type RpcProtocol<
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
         ? Env extends "server"
             ? (player: Player) => ArgsType<T[K]["returns"], undefined> extends undefined
-                ? ArgsType<T[keyof T]["returns"], void>
+                ? ArgsType<T[K]["returns"], void>
                 : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
             : () => ArgsType<T[K]["returns"], undefined> extends undefined
-                ? ArgsType<T[keyof T]["returns"], void>
+                ? ArgsType<T[K]["returns"], void>
                 : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
         : Env extends "server"
             ? (player: Player, args: ArgsType<T[K]["args"], undefined>) => ArgsType<T[K]["returns"], undefined> extends undefined
-                ? ArgsType<T[keyof T]["returns"], void>
+                ? ArgsType<T[K]["returns"], void>
                 : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
             : (args: ArgsType<T[K]["args"], undefined>) => ArgsType<T[K]["returns"], undefined> extends undefined
-                ? ArgsType<T[keyof T]["returns"], void>
+                ? ArgsType<T[K]["returns"], void>
                 : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>;
 };
 
