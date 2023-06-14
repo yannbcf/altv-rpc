@@ -1,5 +1,16 @@
 # @yannbcf/altv-rpc
 
+## 0.1.0
+
+### Minor Changes
+
+- Restructure the library exports
+
+### Patch Changes
+
+- Implement an event name override system
+- Expose zod compatible alt:V classes
+
 ## 0.0.4
 
 ### Patch Changes
