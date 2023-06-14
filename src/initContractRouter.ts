@@ -60,12 +60,24 @@ export function initContractRouter<
             }
 
             if (!(_rpc?.returns instanceof z.ZodVoid) || !(_rpc?.returns instanceof z.ZodUndefined)) {
+                let hasReturned = false;
+
                 _args.returnValue = (returnValue: typeof _rpc.returns) => {
                     if (env === "server") {
+                        if (hasReturned) {
+                            throw new Error(`[alt-rpc] The rpc ${contract} already returned a value.`);
+                        }
+
                         (opts.emit as EmitFn<Player, "server">)(_args.player, rpcName, returnValue);
+                        hasReturned = true;
                     }
                     else {
+                        if (hasReturned) {
+                            throw new Error(`[alt-rpc] The rpc ${contract} already returned a value.`);
+                        }
+
                         (opts.emit as EmitFn<Player, "web" | "client">)(rpcName, returnValue);
+                        hasReturned = true;
                     }
                 };
             }
