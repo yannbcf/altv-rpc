@@ -1,5 +1,11 @@
 # @yannbcf/altv-rpc
 
+## 0.1.1
+
+### Patch Changes
+
+- Fix package types
+
 ## 0.1.0
 
 ### Minor Changes
