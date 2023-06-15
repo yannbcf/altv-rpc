@@ -34,7 +34,7 @@
         - $client
         - $server
 - [Installation](#installation)
-- [Usage](#usage)
+- [Examples](#examples)
 
 # Api definition
 
@@ -257,7 +257,7 @@ yann add @yannbcf/altv-rpc zod
 npm install @yannbcf/altv-rpc zod
 ```
 
-# Usage
+# Examples
 
 Create a contract, implement it in your browser, alt:V client or server side and consume it !
 The supported communications are:
