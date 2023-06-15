@@ -8,9 +8,9 @@ const ENTRY_POINT = join(BASE, "src/index.ts");
 try {
     const t = performance.now();
 
-    execSync(`npx dts-bundle-generator -o ${join("dist", "index.d.ts")} ${ENTRY_POINT} --no-check`, {
-        stdio: "inherit",
-    });
+    // execSync(`npx dts-bundle-generator -o ${join("dist", "index.d.ts")} ${ENTRY_POINT} --no-check`, {
+    //     stdio: "inherit",
+    // });
 
     await Promise.all([
         build({
