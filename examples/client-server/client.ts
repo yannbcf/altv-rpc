@@ -1,8 +1,8 @@
-import { fromClientToServerContract, fromServerToClientContract } from "./shared.ts";
-import { initContractRouter, initContract } from "@yannbcf/altv-rpc";
+import { fromClientContract, fromServerContract } from "./shared.ts";
+import { contract } from "@yannbcf/altv-rpc";
 import * as alt from "alt-client";
 
-initContractRouter("client", fromServerToClientContract, {
+contract.setupRouter("client", fromServerContract, {
     on: alt.onServer,
     emit: alt.emitServerRaw
 }, {
@@ -18,23 +18,27 @@ initContractRouter("client", fromServerToClientContract, {
     }
 });
 
-const rpc = initContract("client", fromClientToServerContract, {
+const rpc = contract.init("client", fromClientContract, {
     once: alt.onceServer,
     off: alt.offServer,
     emit: alt.emitServerRaw,
 });
 
-// sends an event
-rpc.noResponse({ apples: 1 });
+async function main() {
+    // sends an event
+    rpc.noResponse({ apples: 1 });
 
-// sends an event and wait for a response (timeout after 2 seconds)
-const result = await rpc.getServerUptime({ playerId: 0 });
-if (result.success) {
-    console.log(result.data);
+    // sends an event and wait for a response (timeout after 2 seconds)
+    const result = await rpc.getServerUptime({ playerId: 0 });
+    if (result.success) {
+        console.log(result.data);
+    }
+
+    // sends an event and wait for a response (timeout after 2 seconds)
+    const result2 = await rpc.getServerUptime2();
+    if (result2.success) {
+        console.log(result2.data);
+    }
 }
 
-// sends an event and wait for a response (timeout after 2 seconds)
-const result2 = await rpc.getServerUptime2();
-if (result2.success) {
-    console.log(result2.data);
-}
+main();

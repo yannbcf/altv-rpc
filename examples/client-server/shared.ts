@@ -1,7 +1,7 @@
 import { contract } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
-export const fromClientToServerContract = contract({
+export const fromClientContract = contract.create({
     noResponse: {
         args: z.object({ apples: z.number() })
     },
@@ -16,7 +16,7 @@ export const fromClientToServerContract = contract({
     },
 });
 
-export const fromServerToClientContract = contract({
+export const fromServerContract = contract.create({
     noResponse: {
         args: z.object({ apples: z.number() })
     },

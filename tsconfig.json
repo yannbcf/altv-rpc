@@ -11,7 +11,7 @@
         "skipLibCheck": false,
         "moduleResolution": "nodenext",
         "allowImportingTsExtensions": true,
-        "outDir": "./dist",
+        // "outDir": "./dist",
         "typeRoots": ["node_modules/@types", "node_modules/@altv"],
         "noFallthroughCasesInSwitch": true,
         "noUncheckedIndexedAccess": true,
