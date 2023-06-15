@@ -30,6 +30,7 @@
         - [`.extend`](#contract-extending)
         - [`.init`](#contract-init)
         - [`.setupRouter`](#contract-router-setup)
+    - [$typeOnly](#typeonly)
     - [alt:V built in types](#altv-built-in-types)
         - $client
         - $server
@@ -185,6 +186,53 @@ contract.setupRouter("server", ct, {
         // the value 42 is returned to the player
         returnValue(42);
     }
+});
+```
+
+## $TypeOnly
+
+Do you want to declare a schema without the runtime type checking ? The ``$typeOnly`` method is for here you. This allows you to precisely decide on which fields of your contract you want runtime type checking.
+
+> It is planned to be able to fully disable type checking for an rpc at the contract / rpc call level
+
+```ts
+// server.ts
+import { contract, $server, $typeOnly } from "@yannbcf/altv-rpc";
+import { z } from "zod";
+
+import * as alt from "alt-server";
+
+const ct = contract.create({
+    name: {
+        args: z.object({
+            // This property type checking at runtime will be skipped
+            typeOnlyPlayer: $typeOnly<alt.Player>(),
+
+            // Evaluated, will throw if not valid at runtime (this is the inteded behavior, as of v0.1.1 it doesnt yet for technical reasons)
+            player: $server.player,
+
+            // Not evaluated
+            typeOnlyNumber: $typeOnly<number>(),
+            // Evaluated
+            number: z.number(),
+
+            // Not evaluated
+            typeOnlyNumber: $typeOnly<{
+                inner1: number;
+                inner2: string;
+            }>(),
+            // Evaluated
+            number: z.object({
+                inner1: z.number(),
+                inner2: z.string(),
+            }),
+        }),
+    },
+    // Not evaluated
+    // returns: $typeOnly<string>()
+    
+    // Evaluated
+    returns: $typeOnly<string>()
 });
 ```
 
