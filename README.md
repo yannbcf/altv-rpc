@@ -190,11 +190,11 @@ contract.setupRouter("server", ct, {
 
 ## Alt built-in types
 
-As you may have noticed it, the contracts only accept zod privitimes/objects. Those are runtime data integrity checks and works really well with typescript type inference.
+As you may have noticed it, the contracts only accept zod privitimes/objects. Those are runtime data type checks and it works really well with typescript type inference
 
-You may also know that there is no "shared" alt.Player class, the client and server player are different entities, have different properties, so how can we use contracts in an easy way ?
+You may also know that there is no "shared" alt.Player class (just as an example), the client and server player are different entities, have different properties, so how can we use contracts in an easy way when they're meant to be created in a shared environment ?
 
-My recommended approach, is to create a shared contract, and replace the alt types with z.never(), which will basically look like that
+My recommended approach, is to create a shared contract, and replace the alt:V built-in types with z.never(), which will basically infer the type to ``never``, making it imposible to use without overriding the contract with the rpc ``$client`` and ``$server`` helpers in the correct environments
 
 ```ts
 // shared.ts
