@@ -30,8 +30,9 @@
         - [`.extend`](#contract-extending)
         - [`.init`](#contract-init)
         - [`.setupRouter`](#contract-router-setup)
-    - [$client](#alt-client-types)
-    - [$server](#alt-server-types)
+    - [alt:V built in types](#alt-built-in-types)
+        - $client
+        - $server
 - [Installation](#installation)
 - [Usage](#usage)
 
