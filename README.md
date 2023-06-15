@@ -188,7 +188,7 @@ contract.setupRouter("server", ct, {
 });
 ```
 
-## Alt built-in types
+## Alt:V built-in types
 
 As you may have noticed it, the contracts only accept zod privitimes/objects. Those are runtime data type checks and it works really well with typescript type inference
 
