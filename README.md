@@ -310,9 +310,84 @@ npm install @yannbcf/altv-rpc zod
 Create a contract, implement it in your browser, alt:V client or server side and consume it !
 The supported communications are:
 
-``web <-> client``
+``client <-> webview``
 
 ``client <-> server``
+
+## client-web communication example
+
+[shared.ts](./examples/client-webview/shared.ts)
+```ts
+import { contract } from "@yannbcf/altv-rpc";
+import { z } from "zod";
+
+export const fromWebviewContract = contract.create({
+    inventoryMove: {}
+});
+
+export const fromClientContract = contract.create({
+    updateUi: {
+        args: z.object({
+            speedo: z.number(),
+        })
+    }
+});
+```
+
+[client.ts](./examples/client-webview/webview.ts)
+```ts
+import { fromWebviewContract, fromClientContract } from "./shared.ts";
+import { contract } from "@yannbcf/altv-rpc";
+import * as alt from "alt-client";
+
+const webview = new alt.WebView("...");
+
+contract.setupRouter("client", fromWebviewContract, {
+    on: webview.on,
+    emit: webview.emit
+}, {
+    inventoryMove: () => {
+        //
+    }
+});
+
+const webRpc = contract.init("client", fromClientContract, {
+    once: webview.once,
+    off: webview.off,
+    emit: webview.emit
+});
+
+webRpc.updateUi({ speedo: 0 });
+```
+
+[webview.ts](./examples/client-webview/webview.ts)
+```ts
+import { fromWebviewContract, fromClientContract } from "./shared.ts";
+import { contract } from "@yannbcf/altv-rpc";
+
+contract.setupRouter("web", fromClientContract, {
+    // @ts-expect-error method exposed in the alt:V webengine (cef)
+    on: alt.on,
+    // @ts-expect-error method exposed in the alt:V webengine (cef)
+    emit: alt.emit
+}, {
+    // args: { speedo: number }
+    updateUi: (args) => {
+        //
+    }
+});
+
+const rpc = contract.init("web", fromWebviewContract, {
+    // @ts-expect-error method exposed in the alt:V webengine (cef)
+    once: alt.once,
+    // @ts-expect-error method exposed in the alt:V webengine (cef)
+    off: alt.off,
+    // @ts-expect-error method exposed in the alt:V webengine (cef)
+    emit: alt.emit
+});
+
+rpc.inventoryMove();
+```
 
 ## client-server communication example
 
