@@ -35,7 +35,7 @@ import { z } from "zod";
 // export const rgba = z.custom<alt.RGBA>((val) => val instanceof alt.RGBA);
 // export const file = z.custom<alt.File>((val) => val instanceof alt.File);
 
-export const connectionInfo = z.custom<alt.ConnectionInfo>((val) => val instanceof alt.ConnectionInfo);
+export const connectionInfo = z.custom<alt.ConnectionInfo>(() => true);
 export const baseObject = z.custom<alt.BaseObject>(() => true);
 export const worldObject = z.custom<alt.WorldObject>(() => true);
 export const virtualEntityGroup = z.custom<alt.VirtualEntityGroup>(() => true);

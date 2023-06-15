@@ -1,6 +1,6 @@
 import type { RpcContract } from "./types.ts";
 
-type MergeContracts<Contract1 extends RpcContract, Contract2 extends RpcContract> = {
+type ExtendContract<Contract1 extends RpcContract, Contract2 extends RpcContract> = {
     [K in keyof Contract1]: K extends keyof Contract2 ? Contract2[K] : Contract1[K];
 } & Omit<Contract2, keyof Contract1>;
 
@@ -15,5 +15,5 @@ export function extend<
     const Contract1 extends RpcContract,
     const Contract2 extends RpcContract
 >(contract1: Contract1, contract2: Contract2) {
-    return { ...contract1, ...contract2 } as MergeContracts<Contract1, Contract2>;
+    return { ...contract1, ...contract2 } as ExtendContract<Contract1, Contract2>;
 }
