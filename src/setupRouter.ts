@@ -52,32 +52,37 @@ export function setupRouter<
             // @ts-ignore
             const _args = parser ? parser.safeParse(args[env === "server" ? 1 : 0]).data ?? undefined : args ?? {};
             if (parser && _args === undefined) {
-                console.warn("FAILED TO PARSE");
-                return;
+                throw new Error(`[alt-rpc] The rpc <${contract}> args type checking issued: ${_args.error.message}`);
             }
 
             if (env === "server") {
                 _args.player = args.shift() as Player;
             }
 
-            if (!(_rpc?.returns instanceof z.ZodVoid) || !(_rpc?.returns instanceof z.ZodUndefined)) {
+            const returnsValueParser = _rpc.returns;
+            if (returnsValueParser !== undefined && !(returnsValueParser instanceof z.ZodVoid) && !(returnsValueParser instanceof z.ZodUndefined)) {
                 let hasReturned = false;
 
                 _args.returnValue = (returnValue: typeof _rpc.returns) => {
+                    const evaluation = returnsValueParser.safeParse(returnValue);
+                    if (!evaluation.success) {
+                        throw new Error(`[alt-rpc] The rpc <${contract}> returns type checking issued: ${evaluation.error.message}`);
+                    }
+
                     if (env === "server") {
                         if (hasReturned) {
-                            throw new Error(`[alt-rpc] The rpc ${contract} already returned a value.`);
+                            throw new Error(`[alt-rpc] The rpc <${contract}> already returned a value.`);
                         }
 
-                        (opts.emit as EmitFn<Player, "server">)(_args.player, rpcName, returnValue);
+                        (opts.emit as EmitFn<Player, "server">)(_args.player, rpcName, evaluation.data);
                         hasReturned = true;
                     }
                     else {
                         if (hasReturned) {
-                            throw new Error(`[alt-rpc] The rpc ${contract} already returned a value.`);
+                            throw new Error(`[alt-rpc] The rpc <${contract}> already returned a value.`);
                         }
 
-                        (opts.emit as EmitFn<Player, "web" | "client">)(rpcName, returnValue);
+                        (opts.emit as EmitFn<Player, "web" | "client">)(rpcName, evaluation.data);
                         hasReturned = true;
                     }
                 };
