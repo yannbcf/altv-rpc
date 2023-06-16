@@ -1,34 +1,38 @@
 import type { ArgsType, Envs, AllowedAny, Callback, EmitFn, RpcContract } from "./types.ts";
 import { z } from "zod";
 
-export type RpcResult<T> = {
+type RpcResult<T> = {
     success: true;
     data: T
 } | {
     success: false;
 }
 
+type ClientRpcProtocol<T extends RpcContract> = {
+    [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
+        ? () => ArgsType<T[K]["returns"], undefined> extends undefined
+            ? ArgsType<T[K]["returns"], void>
+            : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
+        :(args: ArgsType<T[K]["args"], undefined>) => ArgsType<T[K]["returns"], undefined> extends undefined
+            ? ArgsType<T[K]["returns"], void>
+            : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>;
+}
+
+type ServerRpcProtocol<T extends RpcContract, Player> = {
+    [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
+        ? (player: Player) => ArgsType<T[K]["returns"], undefined> extends undefined
+            ? ArgsType<T[K]["returns"], void>
+            : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
+        : (player: Player, args: ArgsType<T[K]["args"], undefined>) => ArgsType<T[K]["returns"], undefined> extends undefined
+            ? ArgsType<T[K]["returns"], void>
+            : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
+}
+
 type RpcProtocol<
     T extends RpcContract,
     Env extends Envs,
     Player,
-> = {
-    [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
-        ? Env extends "server"
-            ? (player: Player) => ArgsType<T[K]["returns"], undefined> extends undefined
-                ? ArgsType<T[K]["returns"], void>
-                : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
-            : () => ArgsType<T[K]["returns"], undefined> extends undefined
-                ? ArgsType<T[K]["returns"], void>
-                : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
-        : Env extends "server"
-            ? (player: Player, args: ArgsType<T[K]["args"], undefined>) => ArgsType<T[K]["returns"], undefined> extends undefined
-                ? ArgsType<T[K]["returns"], void>
-                : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
-            : (args: ArgsType<T[K]["args"], undefined>) => ArgsType<T[K]["returns"], undefined> extends undefined
-                ? ArgsType<T[K]["returns"], void>
-                : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>;
-};
+> = Env extends "server" ? ServerRpcProtocol<T, Player> : ClientRpcProtocol<T>;
 
 export function init<
     Env extends Envs,
@@ -48,8 +52,8 @@ export function init<
     for (const contract in rpcContract) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const _rpc = rpcContract[contract]!;
-        const rpcName = _rpc.eventName !== undefined ?
-            `${_rpc.eventName}` : contract;
+        const rpcName = _rpc.internalEventName !== undefined ?
+            `${_rpc.internalEventName}` : contract;
 
         rpc[contract] = ((...args: unknown[]) => {
             if (_rpc.returns === undefined || _rpc.returns instanceof z.ZodVoid || _rpc.returns instanceof z.ZodUndefined) {

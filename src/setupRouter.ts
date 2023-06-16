@@ -2,27 +2,35 @@
 import type { ArgsType, Envs, Callback, EmitFn, RpcContract } from "./types.ts";
 import { z } from "zod";
 
+type Void = undefined | void;
+
+type ClientRpcRouterProtocol<T extends RpcContract> = {
+    [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
+        ? ArgsType<T[K]["returns"], undefined> extends undefined
+            ? () => Void
+            : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void }) => Void
+        : ArgsType<T[K]["returns"], undefined> extends undefined
+            ? (args: ArgsType<T[K]["args"], undefined>) => Void
+            : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined>) => Void;
+}
+
+type ServerRpcRouterProtocol<T extends RpcContract, Extend extends {}> = {
+    [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
+        ? ArgsType<T[K]["returns"], undefined> extends undefined
+            ? (args: Extend) => Void
+            : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & Extend) => Void
+        : ArgsType<T[K]["returns"], undefined> extends undefined
+            ? (args: ArgsType<T[K]["args"], undefined> & Extend) => Void
+            : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined> & Extend) => Void;
+}
+
 type RpcRouterProtocol<
     T extends RpcContract,
     Env extends Envs,
     Extend extends {}
-> = {
-    [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
-        ? Env extends "server"
-            ? ArgsType<T[K]["returns"], undefined> extends undefined
-                ? (args: Extend) => undefined | void
-                : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & Extend) => undefined | void
-            : ArgsType<T[K]["returns"], undefined> extends undefined
-                ? () => undefined | void
-                : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void }) => undefined | void
-        : Env extends "server"
-            ? ArgsType<T[K]["returns"], undefined> extends undefined
-                ? (args: Extend & ArgsType<T[K]["args"], undefined>) => undefined | void
-                : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & Extend & ArgsType<T[K]["args"], undefined>) => undefined | void
-            : ArgsType<T[K]["returns"], undefined> extends undefined
-                ? (args: ArgsType<T[K]["args"], undefined>) => undefined | void
-                : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined>) => undefined | void;
-}
+> = Env extends "server"
+    ? ServerRpcRouterProtocol<T, Extend>
+    : ClientRpcRouterProtocol<T>;
 
 export function setupRouter<
     T extends RpcContract,
@@ -42,8 +50,8 @@ export function setupRouter<
     for (const contract in rpcContract) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const _rpc = rpcContract[contract]!;
-        const rpcName = _rpc.eventName !== undefined ?
-            `${_rpc.eventName}` : contract;
+        const rpcName = _rpc.internalEventName !== undefined ?
+            `${_rpc.internalEventName}` : contract;
 
         opts.on(rpcName, async (...args) => {
             const parser = _rpc?.args;
@@ -65,6 +73,7 @@ export function setupRouter<
 
                 _args.returnValue = (returnValue: typeof _rpc.returns) => {
                     const evaluation = returnsValueParser.safeParse(returnValue);
+
                     if (!evaluation.success) {
                         throw new Error(`[alt-rpc] The rpc <${contract}> returns type checking issued: ${evaluation.error.message}`);
                     }
