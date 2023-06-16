@@ -14,7 +14,7 @@
 ## Roadmap to the 1.0 release
 
 - [X] 100% typesafety
-- [ ] optional runtime arguments evaluation
+- [X] optional runtime arguments evaluation
 - [ ] wss backend support
 - [X] event names obfuscation
 - [ ] events rate limiting
@@ -30,6 +30,9 @@
         - [`.extend`](#contract-extending)
         - [`.init`](#contract-init)
         - [`.setupRouter`](#contract-router-setup)
+    - [contract type check level](#contract-type-check-level)
+        - .getCheckTypeLevel
+        - .setCheckTypeLevel
     - [$typeOnly](#typeonly)
     - [alt:V built in types](#altv-built-in-types)
         - $client
@@ -63,10 +66,11 @@ To create a contract you simply have to call the ``contract.create`` method
 import { contract } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
-// empty contract
-const ct = contract.create({});
+// empty contract, with no runtime type checking
+const ct = contract.create("no_typecheck", {});
 
-const ct = contract.create({
+// contract with runtime type checking
+const ct = contract.create("typecheck", {
     // an rpc simply emiting an event with a custom internal event name
     coolRpc: {
         internalEventName: "kekw",
@@ -154,7 +158,7 @@ async function main() {
 
 ## Contract router setup
 
-In order to receive rpc's, and handle them you need to setup a router
+In order to receive rpc's, and handle them you need to setup a router. As you may have noticed, the contract has a type checking level, if set to typecheck, every rpc's are going to be type checked at runtime using Zod's parsing evaluation for the args and returns rpc fields.
 
 ```ts
 import { contract } from "@yannbcf/altv-rpc";
@@ -162,7 +166,7 @@ import { z } from "zod";
 
 import * as alt from "alt-client";
 
-const ct = contract.create({
+const ct = contract.create("typecheck", {
     test: {
         args: z.object({
             playerId: z.number(),
@@ -186,6 +190,87 @@ contract.setupRouter("server", ct, {
         // the value 42 is returned to the player
         returnValue(42);
     }
+});
+```
+
+## Contract type check level
+
+With the version @0.3.0 you define the contract type check level when creating it.
+
+```ts
+import { contract } from "@yannbcf/altv-rpc";
+
+// runtime typechecking for the rpc's args / returns type
+const ct1 = contract("typecheck", {});
+
+// no runtime typechecking for the rpc's args / returns type
+const ct2 = contract("no_typecheck", {});
+```
+
+You can get and set a contract check type level
+
+```ts
+import { contract } from "@yannbcf/altv-rpc";
+import { ct } from "./contract.ts";
+
+const typeLevel = contract.getCheckTypeLevel(ct);
+contract.setCheckTypeLevel(ct, "typecheck");
+ ```
+
+You can override the contract check type level per router rpc handler 
+
+```ts
+import { contract } from "@yannbcf/altv-rpc";
+import { z } from "zod";
+
+import * as alt from "alt-client";
+
+const ct = contract.create("no_typecheck", {
+    test: {
+        args: z.object({
+            playerId: z.number(),
+        }),
+    },
+});
+
+contract.setupRouter("server", ct, {
+    on: alt.onClient,
+    emit: alt.emitClient
+}, {
+    // args: { player: alt.Player, playerId: number }
+    test: (args) => {
+        //
+    },
+});
+
+contract.setupRouter("server", ct, {
+    on: alt.onClient,
+    emit: alt.emitClient
+}, {
+    // even if the contract is set to no_typecheck, this specific rpc handler is going to be type checked for its arguments types and return value type
+    test: ["typecheck", (args) => {
+        //
+    }],
+});
+
+contract.setupRouter("server", ct, {
+    on: alt.onClient,
+    emit: alt.emitClient
+}, {
+    // even if the contract is set to no_typecheck, this specific rpc handler is going to be type checked for its arguments types
+    test: ["typecheck_args", (args) => {
+        //
+    }],
+});
+
+contract.setupRouter("server", ct, {
+    on: alt.onClient,
+    emit: alt.emitClient
+}, {
+    // even if the contract is set to no_typecheck, this specific rpc handler is going to be type checked for its return value type
+    test: ["typecheck_returns", (args) => {
+        //
+    }],
 });
 ```
 
