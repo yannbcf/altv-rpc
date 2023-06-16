@@ -1,5 +1,16 @@
 # @yannbcf/altv-rpc
 
+## 0.3.0
+
+### Minor Changes
+
+- Implement rpc handler level runtime type checking
+- Implement contract level type checking
+
+### Patch Changes
+
+- Add rpc router return value runtime type checking
+
 ## 0.2.0
 
 ### Minor Changes
