@@ -238,16 +238,10 @@ contract.setupRouter("server", ct, {
     on: alt.onClient,
     emit: alt.emitClient
 }, {
-    // args: { player: alt.Player, playerId: number }
     test: (args) => {
         //
     },
-});
 
-contract.setupRouter("server", ct, {
-    on: alt.onClient,
-    emit: alt.emitClient
-}, {
     // even if the contract is set to no_typecheck, this specific rpc handler is going to be type checked for its arguments types and return value type
     // NOTE: because you've used $typeOnly for the field player, args.player type checking will be skipped
     test: ["typecheck", (args) => {
@@ -259,6 +253,25 @@ contract.setupRouter("server", ct, {
     on: alt.onClient,
     emit: alt.emitClient
 }, {
+    test: (args) => {
+        //
+    }
+        
+    // even if the contract is set to no_typecheck, this specific rpc handler is going to be type checked for its arguments types and return value type
+    // NOTE: because you've used $typeOnly for the field player, args.player type checking will be skipped
+    test: ["typecheck", (args) => {
+        //
+    }],
+});
+
+contract.setupRouter("server", ct, {
+    on: alt.onClient,
+    emit: alt.emitClient
+}, {
+    test: (args) => {
+        //
+    }
+
     // even if the contract is set to no_typecheck, this specific rpc handler is going to be type checked for its arguments types
     test: ["typecheck_args", (args) => {
         //
@@ -269,6 +282,10 @@ contract.setupRouter("server", ct, {
     on: alt.onClient,
     emit: alt.emitClient
 }, {
+    test: (args) => {
+        //
+    }
+
     // even if the contract is set to no_typecheck, this specific rpc handler is going to be type checked for its return value type
     test: ["typecheck_returns", (args) => {
         //
