@@ -104,7 +104,7 @@ You can also extend a contract
 import { contract } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
-const ct1 = contract.create({
+const ct1 = contract.create("typecheck", {
     test1: {
         args: z.object({})
     },
@@ -132,7 +132,7 @@ import { z } from "zod";
 
 import * as alt from "alt-client";
 
-const ct = contract.create({
+const ct = contract.create("typecheck", {
     test: {
         args: z.object({
             playerId: z.number(),
@@ -306,7 +306,7 @@ import { z } from "zod";
 
 import * as alt from "alt-server";
 
-const ct = contract.create({
+const ct = contract.create("typecheck", {
     name: {
         args: z.object({
             // This property type checking at runtime will be skipped
@@ -353,7 +353,7 @@ My recommended approach, is to create a shared contract, and replace the alt:V b
 import { contract } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
-export const sharedCt = contract.create({
+export const sharedCt = contract.create("typecheck", {
     notifyPlayer: {
         args: {
             playerToNotify: z.never(),
@@ -425,11 +425,11 @@ The supported communications are:
 import { contract } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
-export const fromWebviewContract = contract.create({
+export const fromWebviewContract = contract.create("typecheck", {
     inventoryMove: {}
 });
 
-export const fromClientContract = contract.create({
+export const fromClientContract = contract.create("typecheck", {
     updateUi: {
         args: z.object({
             speedo: z.number(),
@@ -500,7 +500,7 @@ rpc.inventoryMove();
 import { contract } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
-export const fromClientContract = contract.create({
+export const fromClientContract = contract.create("typecheck", {
     noResponse: {
         args: z.object({ apples: z.number() })
     },
@@ -515,7 +515,7 @@ export const fromClientContract = contract.create({
     },
 });
 
-export const fromServerContract = contract.create({
+export const fromServerContract = contract.create("typecheck", {
     noResponse: {
         args: z.object({ apples: z.number() })
     },
@@ -633,7 +633,7 @@ alt.on("playerConnect", async (player: alt.Player) => {
 import { contract } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
-export const fromClientContract = contract.create({
+export const fromClientContract = contract.create("typecheck", {
     notifyOtherPlayer: {
         args: z.object({
             otherPlayer: z.never()
