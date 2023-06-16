@@ -1,27 +1,29 @@
 
-import type { ArgsType, Envs, Callback, EmitFn, RpcContract } from "./types.ts";
+import type { ArgsType, Envs, Callback, EmitFn, RpcContract, AllowedAny } from "./types.ts";
 import { z } from "zod";
 
+type TypeCheckModes = "no_typecheck" | "typecheck" | "typecheck_args" | "typecheck_returns";
+type O<T> = T | [TypeCheckModes, T];
 type Void = undefined | void;
 
 type ClientRpcRouterProtocol<T extends RpcContract> = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
         ? ArgsType<T[K]["returns"], undefined> extends undefined
-            ? () => Void
-            : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void }) => Void
+            ? O<() => Void>
+            : O<(args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void }) => Void>
         : ArgsType<T[K]["returns"], undefined> extends undefined
-            ? (args: ArgsType<T[K]["args"], undefined>) => Void
-            : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined>) => Void;
+            ? O<(args: ArgsType<T[K]["args"], undefined>) => Void>
+            : O<(args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined>) => Void>;
 }
 
 type ServerRpcRouterProtocol<T extends RpcContract, Extend extends {}> = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
         ? ArgsType<T[K]["returns"], undefined> extends undefined
-            ? (args: Extend) => Void
-            : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & Extend) => Void
+            ? O<(args: Extend) => Void>
+            : O<(args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & Extend) => Void>
         : ArgsType<T[K]["returns"], undefined> extends undefined
-            ? (args: ArgsType<T[K]["args"], undefined> & Extend) => Void
-            : (args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined> & Extend) => Void;
+            ? O<(args: ArgsType<T[K]["args"], undefined> & Extend) => Void>
+            : O<(args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined> & Extend) => Void>;
 }
 
 type RpcRouterProtocol<
@@ -56,11 +58,19 @@ export function setupRouter<
         opts.on(rpcName, async (...args) => {
             const parser = _rpc?.args;
 
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            const _args = parser ? parser.safeParse(args[env === "server" ? 1 : 0]).data ?? undefined : args ?? {};
-            if (parser && _args === undefined) {
-                throw new Error(`[alt-rpc] The rpc <${contract}> args type checking issued: ${_args.error.message}`);
+            const bindingRpc = bindings[contract];
+            const [typecheckLevel, rpcCall] = Array.isArray(bindingRpc)
+                ? [bindingRpc[0], bindingRpc[1]] : ["no_typecheck", bindingRpc];
+
+            const [_args, error]: [AllowedAny, AllowedAny] = ["typecheck", "typecheck_args"].includes(typecheckLevel) && parser
+                ? (() => {
+                    const result = parser.safeParse(args[env === "server" ? 1 : 0]);
+                    return result.success ? [result.data, null] : [args, result.error];
+                })()
+                : [args[env === "server" ? 1 : 0] ?? {}, null];
+
+            if (error !== null) {
+                throw new Error(`[alt-rpc] The rpc <${contract}> args type checking issued: ${error.message}`);
             }
 
             if (env === "server") {
@@ -72,10 +82,15 @@ export function setupRouter<
                 let hasReturned = false;
 
                 _args.returnValue = (returnValue: typeof _rpc.returns) => {
-                    const evaluation = returnsValueParser.safeParse(returnValue);
+                    const [_returnValue, error]: [AllowedAny, AllowedAny] = ["typecheck", "typecheck_returns"].includes(typecheckLevel)
+                        ? (() => {
+                            const result = returnsValueParser.safeParse(returnValue);
+                            return result.success ? [result.data, null] : [args, result.error];
+                        })()
+                        : [returnValue, null];
 
-                    if (!evaluation.success) {
-                        throw new Error(`[alt-rpc] The rpc <${contract}> returns type checking issued: ${evaluation.error.message}`);
+                    if (error !== null) {
+                        throw new Error(`[alt-rpc] The rpc <${contract}> returns type checking issued: ${error.message}`);
                     }
 
                     if (env === "server") {
@@ -83,7 +98,7 @@ export function setupRouter<
                             throw new Error(`[alt-rpc] The rpc <${contract}> already returned a value.`);
                         }
 
-                        (opts.emit as EmitFn<Player, "server">)(_args.player, rpcName, evaluation.data);
+                        (opts.emit as EmitFn<Player, "server">)(_args.player, rpcName, _returnValue);
                         hasReturned = true;
                     }
                     else {
@@ -91,13 +106,13 @@ export function setupRouter<
                             throw new Error(`[alt-rpc] The rpc <${contract}> already returned a value.`);
                         }
 
-                        (opts.emit as EmitFn<Player, "web" | "client">)(rpcName, evaluation.data);
+                        (opts.emit as EmitFn<Player, "web" | "client">)(rpcName, _returnValue);
                         hasReturned = true;
                     }
                 };
             }
 
-            bindings[contract](_args);
+            rpcCall(_args);
         });
     }
 }
