@@ -1,9 +1,10 @@
 
-import type { ArgsType, Envs, Callback, EmitFn, RpcContract, AllowedAny } from "./types.ts";
+import type { TypeCheckLevel, ArgsType, Envs, Callback, EmitFn, RpcContract, AllowedAny } from "./types.ts";
+
+import { getTypeCheckLevel } from "./typeCheckLevel.ts";
 import { z } from "zod";
 
-type TypeCheckModes = "no_typecheck" | "typecheck" | "typecheck_args" | "typecheck_returns";
-type O<T> = T | [TypeCheckModes, T];
+type O<T> = T | [TypeCheckLevel, T];
 type Void = undefined | void;
 
 type ClientRpcRouterProtocol<T extends RpcContract> = {
@@ -60,7 +61,7 @@ export function setupRouter<
 
             const bindingRpc = bindings[contract];
             const [typecheckLevel, rpcCall] = Array.isArray(bindingRpc)
-                ? [bindingRpc[0], bindingRpc[1]] : ["no_typecheck", bindingRpc];
+                ? [bindingRpc[0], bindingRpc[1]] : [getTypeCheckLevel(rpcContract), bindingRpc];
 
             const [_args, error]: [AllowedAny, AllowedAny] = ["typecheck", "typecheck_args"].includes(typecheckLevel) && parser
                 ? (() => {

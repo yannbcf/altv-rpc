@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export type TypeCheckLevel = "no_typecheck" | "typecheck" | "typecheck_args" | "typecheck_returns";
+export type ContractTypeCheckLevel = Extract<TypeCheckLevel, "typecheck" | "no_typecheck">;
 export type ArgsType<T, U extends undefined | void> = T extends z.ZodTypeAny ? T["_output"] : U;
 export type Envs = "web" | "client" | "server";
 
@@ -12,7 +14,7 @@ export type EmitFn<Player, TEnv extends Envs> = TEnv extends "server"
     : (eventName: string, ...args: unknown[]) => void;
 
 export type RpcContract = {
-    [contractName: string]: {
+    [rpcName: string]: {
         internalEventName?: string | number;
         args?: z.AnyZodObject;
         returns?: z.ZodType<AllowedAny, AllowedAny>;
