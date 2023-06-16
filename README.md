@@ -220,7 +220,7 @@ contract.setTypeCheckLevel(ct, "typecheck");
 You can override the contract type check level per router rpc handler 
 
 ```ts
-import { contract } from "@yannbcf/altv-rpc";
+import { contract, $typeOnly } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
 import * as alt from "alt-client";
@@ -228,6 +228,7 @@ import * as alt from "alt-client";
 const ct = contract.create("no_typecheck", {
     test: {
         args: z.object({
+            player: $typeOnly<alt.Player>(),
             playerId: z.number(),
         }),
     },
@@ -248,6 +249,7 @@ contract.setupRouter("server", ct, {
     emit: alt.emitClient
 }, {
     // even if the contract is set to no_typecheck, this specific rpc handler is going to be type checked for its arguments types and return value type
+    // NOTE: because you've used $typeOnly for the field player, args.player type checking will be skipped
     test: ["typecheck", (args) => {
         //
     }],
