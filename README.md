@@ -31,8 +31,8 @@
         - [`.init`](#contract-init)
         - [`.setupRouter`](#contract-router-setup)
     - [contract type check level](#contract-type-check-level)
-        - .getCheckTypeLevel
-        - .setCheckTypeLevel
+        - .getTypeCheckLevel
+        - .setTypeCheckLevel
     - [$typeOnly](#typeonly)
     - [alt:V built in types](#altv-built-in-types)
         - $client
@@ -207,17 +207,17 @@ const ct1 = contract("typecheck", {});
 const ct2 = contract("no_typecheck", {});
 ```
 
-You can get and set a contract check type level
+You can get and set a contract type check level
 
 ```ts
 import { contract } from "@yannbcf/altv-rpc";
 import { ct } from "./contract.ts";
 
-const typeLevel = contract.getCheckTypeLevel(ct);
-contract.setCheckTypeLevel(ct, "typecheck");
+const typeLevel = contract.getTypeCheckLevel(ct);
+contract.setTypeCheckLevel(ct, "typecheck");
  ```
 
-You can override the contract check type level per router rpc handler 
+You can override the contract type check level per router rpc handler 
 
 ```ts
 import { contract } from "@yannbcf/altv-rpc";
