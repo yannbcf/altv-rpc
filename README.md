@@ -1,6 +1,8 @@
 # alt:V RPC library
 
-> disclaimer: the library is new and experimental
+altv-rpc is a library empowering your developer experience by providing you a typesafe rpc mechanism. Define your contracts, consume them as if you were calling regular functions !
+
+>! :warning: For the library imports to work correctly you must set moduleResolution to "nodenext" (which is the future node standard) in your tsconfig
 
 ## Features
 
@@ -342,21 +344,26 @@ const ct = contract.create("typecheck", {
 
 ## Alt:V built-in types
 
+> Why does $client and $server are since @0.3.6 in a subpath import ? Simply because before that modification, the alt:V built-in types were not type checkable at runtime. The $client and $server helpers colocation with the library main entry point caused issues with the runtime alt imports
+
 As you may have noticed it, the contracts only accept zod privitimes/objects. Those are runtime data type checks and it works really well with typescript type inference
 
 You may also know that there is no "shared" alt.Player class (just as an example), the client and server player are different entities, have different properties, so how can we use contracts in an easy way when they're meant to be created in a shared environment ?
 
-My recommended approach, is to create a shared contract, and replace the alt:V built-in types with z.never(), which will basically infer the type to ``never``, making it imposible to use without overriding the contract with the rpc ``$client`` and ``$server`` helpers in the correct environments
+My recommended approach, is to create a shared contract, and replace the alt:V built-in types with the ``$shared`` helpers, which will basically infer the type to ``never``, making it imposible to use without overriding the contract with the rpc ``$client`` and ``$server`` helpers in the correct environments
 
 ```ts
 // shared.ts
-import { contract } from "@yannbcf/altv-rpc";
+import { $shared } from "@yannbcf/altv-rpc/$shared";
+// OR
+import { contract, $shared } from "@yannbcf/altv-rpc";
+
 import { z } from "zod";
 
 export const sharedCt = contract.create("typecheck", {
     notifyPlayer: {
         args: {
-            playerToNotify: z.never(),
+            playerToNotify: $shared.player,
         }
     },
     // many more..
@@ -364,7 +371,9 @@ export const sharedCt = contract.create("typecheck", {
 });
 
 // client.ts
-import { contract, $client } from "@yannbcf/altv-rpc";
+import { $client } from "@yannbcf/altv-rpc/$client";
+import { contract } from "@yannbcf/altv-rpc";
+
 import { z } from "zod";
 
 import { sharedCt } from "./shared.ts";
@@ -379,7 +388,8 @@ const ct = contract.extend(sharedCt, {
 });
 
 // server.ts
-import { contract, $server } from "@yannbcf/altv-rpc";
+import { $server } from "@yannbcf/altv-rpc/$server";
+import { contract } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
 import { sharedCt } from "./shared.ts";
@@ -644,7 +654,9 @@ export const fromClientContract = contract.create("typecheck", {
 
 [client.ts](./examples/extending-contract/client.ts)
 ```ts
-import { contract, $client } from "@yannbcf/altv-rpc";
+import { $client } from "@yannbcf/altv-rpc/$client";
+import { contract } from "@yannbcf/altv-rpc";
+
 import { fromClientContract } from "./shared.ts";
 import { z } from "zod";
 
@@ -678,7 +690,9 @@ net.notifyOtherPlayer({ otherPlayer: alt.Player.local });
 
 [server.ts](./examples/extending-contract/server.ts)
 ```ts
-import { contract, $server } from "@yannbcf/altv-rpc";
+import { $server } from "@yannbcf/altv-rpc/$server";
+import { contract } from "@yannbcf/altv-rpc";
+
 import { fromClientContract } from "./shared.ts";
 import { z } from "zod";
 
