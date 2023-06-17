@@ -35,6 +35,7 @@ try {
         _build("src/index.ts", "index", ["zod"]),
         _build("src/$types/$client.ts", "$client", ["zod", "alt-client"]),
         _build("src/$types/$server.ts", "$server", ["zod", "alt-server"]),
+        _build("src/$types/$shared.ts", "$shared", ["zod"]),
         _build("src/$types/$typeOnly.ts", "$typeOnly", ["zod"])
     ]);
 
