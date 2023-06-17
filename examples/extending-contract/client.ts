@@ -1,4 +1,6 @@
-import { contract, $client } from "@yannbcf/altv-rpc";
+import { $client } from "@yannbcf/altv-rpc/$client";
+import { contract } from "@yannbcf/altv-rpc";
+
 import { fromClientContract } from "./shared.ts";
 import { z } from "zod";
 
