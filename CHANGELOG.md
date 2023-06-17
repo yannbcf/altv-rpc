@@ -1,5 +1,11 @@
 # @yannbcf/altv-rpc
 
+## 0.3.6
+
+### Patch Changes
+
+- Add $shared type checking
+
 ## 0.3.5
 
 ### Patch Changes
