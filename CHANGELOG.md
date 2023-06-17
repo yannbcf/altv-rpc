@@ -1,5 +1,11 @@
 # @yannbcf/altv-rpc
 
+## 0.3.5
+
+### Patch Changes
+
+- Fix $client and $server subpath exports
+
 ## 0.3.4
 
 ### Patch Changes
