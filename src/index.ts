@@ -1,2 +1,2 @@
-export { $typeOnly } from "./$typeOnly.ts";
+export { $typeOnly } from "./$types/$typeOnly.ts";
 export * as contract from "./exports.ts";
