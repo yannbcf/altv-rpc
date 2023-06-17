@@ -63,7 +63,7 @@ export function setupRouter<
             const [typecheckLevel, rpcCall] = Array.isArray(bindingRpc)
                 ? [bindingRpc[0], bindingRpc[1]] : [getTypeCheckLevel(rpcContract), bindingRpc];
 
-            const [_args, error]: [AllowedAny, AllowedAny] = ["typecheck", "typecheck_args"].includes(typecheckLevel) && parser
+            const [typedArgs, error]: [AllowedAny, AllowedAny] = ["typecheck", "typecheck_args"].includes(typecheckLevel) && parser
                 ? (() => {
                     const result = parser.safeParse(args[env === "server" ? 1 : 0]);
                     return result.success ? [result.data, null] : [args, result.error];
@@ -75,15 +75,15 @@ export function setupRouter<
             }
 
             if (env === "server") {
-                _args.player = args.shift() as Player;
+                typedArgs.player = args.shift() as Player;
             }
 
             const returnsValueParser = _rpc.returns;
             if (returnsValueParser !== undefined && !(returnsValueParser instanceof z.ZodVoid) && !(returnsValueParser instanceof z.ZodUndefined)) {
                 let hasReturned = false;
 
-                _args.returnValue = (returnValue: typeof _rpc.returns) => {
-                    const [_returnValue, error]: [AllowedAny, AllowedAny] = ["typecheck", "typecheck_returns"].includes(typecheckLevel)
+                typedArgs.returnValue = (returnValue: typeof _rpc.returns) => {
+                    const [typedReturnValue, error]: [AllowedAny, AllowedAny] = ["typecheck", "typecheck_returns"].includes(typecheckLevel)
                         ? (() => {
                             const result = returnsValueParser.safeParse(returnValue);
                             return result.success ? [result.data, null] : [args, result.error];
@@ -99,7 +99,7 @@ export function setupRouter<
                             throw new Error(`[alt-rpc] The rpc <${contract}> already returned a value.`);
                         }
 
-                        (opts.emit as EmitFn<Player, "server">)(_args.player, rpcName, _returnValue);
+                        (opts.emit as EmitFn<Player, "server">)(typedArgs.player, rpcName, typedReturnValue);
                         hasReturned = true;
                     }
                     else {
@@ -107,13 +107,13 @@ export function setupRouter<
                             throw new Error(`[alt-rpc] The rpc <${contract}> already returned a value.`);
                         }
 
-                        (opts.emit as EmitFn<Player, "web" | "client">)(rpcName, _returnValue);
+                        (opts.emit as EmitFn<Player, "web" | "client">)(rpcName, typedReturnValue);
                         hasReturned = true;
                     }
                 };
             }
 
-            rpcCall(_args);
+            rpcCall(typedArgs);
         });
     }
 }
