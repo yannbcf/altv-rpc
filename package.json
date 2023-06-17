@@ -7,7 +7,10 @@
     "types": "./dist/index.d.ts",
     "files": [
         "dist/index.d.ts",
-        "dist/index.js"
+        "dist/index.js",
+        "dist/$client.js",
+        "dist/$server.js",
+        "dist/$typeOnly.js"
     ],
     "scripts": {
         "b.update-binaries": "node tools/update-binaries.js --baseFolder binaries",

@@ -29,6 +29,54 @@ try {
             outdir: "dist",
             external: ["zod"],
         }),
+        build({
+            bundle: true,
+            minify: true,
+            format: "esm",
+            platform: "node",
+            target: "esnext",
+            keepNames: true,
+            entryPoints: [
+                {
+                    in: "src/$client.ts",
+                    out: "$client",
+                },
+            ],
+            outdir: "dist",
+            external: ["zod", "alt-client"],
+        }),
+        build({
+            bundle: true,
+            minify: true,
+            format: "esm",
+            platform: "node",
+            target: "esnext",
+            keepNames: true,
+            entryPoints: [
+                {
+                    in: "src/$server.ts",
+                    out: "$server",
+                },
+            ],
+            outdir: "dist",
+            external: ["zod", "alt-server"],
+        }),
+        build({
+            bundle: true,
+            minify: true,
+            format: "esm",
+            platform: "node",
+            target: "esnext",
+            keepNames: true,
+            entryPoints: [
+                {
+                    in: "src/$typeOnly.ts",
+                    out: "$typeOnly",
+                },
+            ],
+            outdir: "dist",
+            external: ["zod"],
+        }),
     ]);
 
     console.log(`\n> Build finished ! (done in ${(performance.now() - t).toFixed(3)} ms)\n`);
