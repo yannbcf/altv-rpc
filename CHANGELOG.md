@@ -1,5 +1,17 @@
 # @yannbcf/altv-rpc
 
+## 0.3.4
+
+### Patch Changes
+
+- Fix library exports
+
+## 0.3.1
+
+### Patch Changes
+
+- Isolate $client and $server to unlock alt types runtime type checking
+
 ## 0.3.0
 
 ### Minor Changes
