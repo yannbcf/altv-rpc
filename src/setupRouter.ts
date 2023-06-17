@@ -99,7 +99,7 @@ export function setupRouter<
                             throw new Error(`[alt-rpc] The rpc <${contract}> already returned a value.`);
                         }
 
-                        (opts.emit as EmitFn<Player, "server">)(typedArgs.player, rpcName, typedReturnValue);
+                        (opts.emit as EmitFn<Player, "server">)(typedArgs.player, `_${rpcName}`, typedReturnValue);
                         hasReturned = true;
                     }
                     else {
@@ -107,7 +107,7 @@ export function setupRouter<
                             throw new Error(`[alt-rpc] The rpc <${contract}> already returned a value.`);
                         }
 
-                        (opts.emit as EmitFn<Player, "web" | "client">)(rpcName, typedReturnValue);
+                        (opts.emit as EmitFn<Player, "local" | "web" | "client">)(`_${rpcName}`, typedReturnValue);
                         hasReturned = true;
                     }
                 };

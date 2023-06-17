@@ -3,7 +3,7 @@ import { z } from "zod";
 export type TypeCheckLevel = "no_typecheck" | "typecheck" | "typecheck_args" | "typecheck_returns";
 export type ContractTypeCheckLevel = Extract<TypeCheckLevel, "typecheck" | "no_typecheck">;
 export type ArgsType<T, U extends undefined | void> = T extends z.ZodTypeAny ? T["_output"] : U;
-export type Envs = "web" | "client" | "server";
+export type Envs = "local" | "web" | "client" | "server";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AllowedAny = any;

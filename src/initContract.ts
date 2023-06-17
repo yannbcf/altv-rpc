@@ -79,7 +79,7 @@ export function init<
                     resolve({ success: true, data: args[env === "server" ? 1 : 0] });
                 };
 
-                opts.once(rpcName, callback);
+                opts.once(`_${rpcName}`, callback);
 
                 if (env === "server") {
                     const player = args.shift() as Player;
