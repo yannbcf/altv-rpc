@@ -50,16 +50,19 @@ export function setupRouter<
     },
     bindings: RpcRouterProtocol<T, Env, { player: Player }>
 ): void {
-    for (const contract in rpcContract) {
+    for (const rpcName in rpcContract) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const _rpc = rpcContract[contract]!;
-        const rpcName = _rpc.internalEventName !== undefined ?
-            `${_rpc.internalEventName}` : contract;
+        const _rpc = rpcContract[rpcName]!;
+        const _rpcName = _rpc.internalEventName !== undefined ?
+            typeof _rpc.internalEventName === "function"
+                ? `${_rpc.internalEventName(rpcName)}`
+                : `${_rpc.internalEventName}`
+            : rpcName;
 
-        opts.on(rpcName, async (...args) => {
+        opts.on(_rpcName, async (...args) => {
             const parser = _rpc?.args;
 
-            const bindingRpc = bindings[contract];
+            const bindingRpc = bindings[rpcName];
             const [typecheckLevel, rpcCall] = Array.isArray(bindingRpc)
                 ? [bindingRpc[0], bindingRpc[1]] : [getTypeCheckLevel(rpcContract), bindingRpc];
 
@@ -71,7 +74,7 @@ export function setupRouter<
                 : [args[env === "server" ? 1 : 0] ?? {}, null];
 
             if (error !== null) {
-                throw new Error(`[alt-rpc] The rpc <${contract}> args type checking issued: ${error.message}`);
+                throw new Error(`[alt-rpc] The rpc <${rpcName}> args type checking issued: ${error.message}`);
             }
 
             if (env === "server") {
@@ -91,23 +94,23 @@ export function setupRouter<
                         : [returnValue, null];
 
                     if (error !== null) {
-                        throw new Error(`[alt-rpc] The rpc <${contract}> returns type checking issued: ${error.message}`);
+                        throw new Error(`[alt-rpc] The rpc <${rpcName}> returns type checking issued: ${error.message}`);
                     }
 
                     if (env === "server") {
                         if (hasReturned) {
-                            throw new Error(`[alt-rpc] The rpc <${contract}> already returned a value.`);
+                            throw new Error(`[alt-rpc] The rpc <${rpcName}> already returned a value.`);
                         }
 
-                        (opts.emit as EmitFn<Player, "server">)(typedArgs.player, `_${rpcName}`, typedReturnValue);
+                        (opts.emit as EmitFn<Player, "server">)(typedArgs.player, `_${_rpcName}`, typedReturnValue);
                         hasReturned = true;
                     }
                     else {
                         if (hasReturned) {
-                            throw new Error(`[alt-rpc] The rpc <${contract}> already returned a value.`);
+                            throw new Error(`[alt-rpc] The rpc <${rpcName}> already returned a value.`);
                         }
 
-                        (opts.emit as EmitFn<Player, "local" | "web" | "client">)(`_${rpcName}`, typedReturnValue);
+                        (opts.emit as EmitFn<Player, "local" | "web" | "client">)(`_${_rpcName}`, typedReturnValue);
                         hasReturned = true;
                     }
                 };

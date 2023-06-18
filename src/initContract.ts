@@ -49,20 +49,23 @@ export function init<
 ) {
     const rpc: Partial<Record<keyof T, AllowedAny>> = {};
 
-    for (const contract in rpcContract) {
+    for (const rpcName in rpcContract) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const _rpc = rpcContract[contract]!;
-        const rpcName = _rpc.internalEventName !== undefined ?
-            `${_rpc.internalEventName}` : contract;
+        const _rpc = rpcContract[rpcName]!;
+        const _rpcName = _rpc.internalEventName !== undefined ?
+            typeof _rpc.internalEventName === "function"
+                ? `${_rpc.internalEventName(rpcName)}`
+                : `${_rpc.internalEventName}`
+            : rpcName;
 
-        rpc[contract] = ((...args: unknown[]) => {
+        rpc[rpcName] = ((...args: unknown[]) => {
             if (_rpc.returns === undefined || _rpc.returns instanceof z.ZodVoid || _rpc.returns instanceof z.ZodUndefined) {
                 if (env === "server") {
                     const player = args.shift() as Player;
-                    (opts.emit as EmitFn<Player, "server">)(player, rpcName, ...args);
+                    (opts.emit as EmitFn<Player, "server">)(player, _rpcName, ...args);
                 }
                 else {
-                    (opts.emit as EmitFn<Player, "client">)(rpcName, ...args);
+                    (opts.emit as EmitFn<Player, "client">)(_rpcName, ...args);
                 }
 
                 return;
@@ -70,7 +73,7 @@ export function init<
 
             return new Promise(resolve => {
                 const timeout = setTimeout(() => {
-                    opts.off(rpcName, callback);
+                    opts.off(_rpcName, callback);
                     resolve({ success: false });
                 }, 2000);
 
@@ -79,14 +82,14 @@ export function init<
                     resolve({ success: true, data: args[env === "server" ? 1 : 0] });
                 };
 
-                opts.once(`_${rpcName}`, callback);
+                opts.once(`_${_rpcName}`, callback);
 
                 if (env === "server") {
                     const player = args.shift() as Player;
-                    (opts.emit as EmitFn<Player, "server">)(player, rpcName, ...args);
+                    (opts.emit as EmitFn<Player, "server">)(player, _rpcName, ...args);
                 }
                 else {
-                    (opts.emit as EmitFn<Player, "client">)(rpcName, ...args);
+                    (opts.emit as EmitFn<Player, "client">)(_rpcName, ...args);
                 }
             });
         });
