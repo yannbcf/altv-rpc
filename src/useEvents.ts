@@ -10,7 +10,7 @@ export type { ServerEvent } from "./events/server.ts";
 
 type Events<T extends {}> = {
     [K in keyof T as `on${Capitalize<K & string>}`]: (
-        handler: (args: T[K] & { removeEvent: () => void }) => void,
+        listener: (args: T[K] & { removeEvent: () => void }) => void,
         opts?: { once: true }
     ) => void;
 } & {
@@ -24,8 +24,8 @@ type Events<T extends {}> = {
             [K in keyof T]: (args: T[K] & { removeEvent: () => void }) => void;
         }>
     ) => void;
-    has: <K extends keyof T>(eventName: K, handler: (args: T[K]) => void) => boolean;
-    remove: <K extends keyof T>(eventName: K, handler: (args: T[K]) => void) => boolean;
+    has: <K extends keyof T>(eventName: K, listener: (args: T[K]) => void) => boolean;
+    remove: <K extends keyof T>(eventName: K, listener: (args: T[K]) => void) => boolean;
 };
 
 function upperCaseFirstLetter(str: string): string {
@@ -36,48 +36,48 @@ function subscribeAltEvent<Alt extends typeof altClient | typeof altServer>(
     alt: Alt,
     internalMapping: Map<string, Map<Callback, Callback[]>>,
     eventName: string,
-    handler: Callback,
+    listener: Callback,
     opts?: { once: true }
 ): void {
     type ClientKeys = keyof altClient.IClientEvent;
     type ServerKeys = keyof altServer.IServerEvent;
 
-    const internalHandler = (...args: unknown[]) => {
+    const internalListener = (...args: unknown[]) => {
         const params: { removeEvent?: typeof removeEvent } = alt.isClient
             ? adaptAltClientEvent(eventName as ClientKeys, ...args as Parameters<altClient.IClientEvent[ClientKeys]>)
             : adaptAltServerEvent(eventName as ServerKeys, ...args as Parameters<altServer.IServerEvent[ServerKeys]>);
 
         const removeEvent = () => {
-            const internalHandlers = internalMapping.get(eventName)?.get(handler);
-            if (internalHandlers == null) return;
+            const internalListeners = internalMapping.get(eventName)?.get(listener);
+            if (internalListeners == null) return;
 
-            alt.off(eventName, internalHandler);
+            alt.off(eventName, internalListener);
 
-            if (internalHandlers.length === 1) {
+            if (internalListeners.length === 1) {
                 internalMapping.delete(eventName);
                 return;
             }
 
-            const index = internalHandlers.indexOf(internalHandler);
+            const index = internalListeners.indexOf(internalListener);
             if (index >= 0) {
-                internalHandlers.splice(index, 1);
+                internalListeners.splice(index, 1);
             }
         };
 
         params["removeEvent"] = removeEvent;
         if (opts?.once) removeEvent();
 
-        handler(params);
+        listener(params);
     };
 
     // @ts-expect-error alt type fuckery ?
-    alt.on(eventName, internalHandler);
+    alt.on(eventName, internalListener);
 
     const mapping = internalMapping.get(eventName) ?? new Map<Callback, Callback[]>();
-    const internalHandlers = mapping.get(handler);
-    if (internalHandlers) internalHandlers.push(internalHandler);
+    const internalListeners = mapping.get(listener);
+    if (internalListeners) internalListeners.push(internalListener);
     else {
-        mapping.set(handler, [internalHandler]);
+        mapping.set(listener, [internalListener]);
         internalMapping.set(eventName, mapping);
     }
 }
@@ -92,8 +92,8 @@ function generate<Alt extends typeof altClient | typeof altServer>(
     for (const eventName of alt.isClient ? getAltClientEventKeys() : getAltServerEventKeys()) {
         const name = <`on${Capitalize<AltEvents & string>}`>`on${upperCaseFirstLetter(eventName)}`;
 
-        events[name] = (handler: Callback, opts?: { once: true }) => {
-            subscribeAltEvent(alt, internalMapping, eventName, handler, opts);
+        events[name] = (listener: Callback, opts?: { once: true }) => {
+            subscribeAltEvent(alt, internalMapping, eventName, listener, opts);
         };
     }
 
@@ -121,30 +121,30 @@ export function useEvents<Alt extends typeof altClient | typeof altServer>(alt: 
                 subscribeAltEvent(alt, internalMapping, binding, bindings[binding] as Callback, { once: true });
             }
         },
-        has: (eventName: EventName, handler: (args: U[EventName]) => void): boolean => {
-            const internalHandlers = internalMapping.get(eventName)?.get(handler);
-            if (internalHandlers == null) return false;
+        has: (eventName: EventName, listener: (args: U[EventName]) => void): boolean => {
+            const internalListeners = internalMapping.get(eventName)?.get(listener);
+            if (internalListeners == null) return false;
 
-            return Boolean(internalHandlers.find(internalHandler => internalHandler === handler));
+            return Boolean(internalListeners.find(internalListener => internalListener === listener));
         },
-        remove: (eventName: EventName, handler: (args: U[EventName]) => void): boolean => {
-            const internalHandlers = internalMapping.get(eventName)?.get(handler);
-            if (internalHandlers == null || internalHandlers.length === 0) return false;
+        remove: (eventName: EventName, listener: (args: U[EventName]) => void): boolean => {
+            const internalListeners = internalMapping.get(eventName)?.get(listener);
+            if (internalListeners == null || internalListeners.length === 0) return false;
 
-            const index = internalHandlers.indexOf(handler);
+            const index = internalListeners.indexOf(listener);
             if (index < 0) return false;
 
-            const internalHandler = internalHandlers.splice(index, 1)[0];
-            if (internalHandler == null) return false;
-            if (internalHandlers.length === 0) {
+            const internalListener = internalListeners.splice(index, 1)[0];
+            if (internalListener == null) return false;
+            if (internalListeners.length === 0) {
                 internalMapping.delete(eventName);
             }
 
-            const eventHandlers = alt.getEventListeners(eventName);
-            const size = eventHandlers.length;
+            const eventListeners = alt.getEventListeners(eventName);
+            const size = eventListeners.length;
 
-            alt.off(eventName, internalHandler);
-            return size > eventHandlers.length;
+            alt.off(eventName, internalListener);
+            return size > eventListeners.length;
         },
         ...generate(alt, internalMapping),
     } as Events<

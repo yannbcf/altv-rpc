@@ -21,7 +21,7 @@ type ClientRpcRouterProtocol<T extends RpcContract> = {
                 returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void;
                 removeRpc: () => void;
             } & ArgsType<T[K]["args"], undefined>) => Void>;
-}
+};
 
 type ServerRpcRouterProtocol<T extends RpcContract, Extend extends {}> = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
@@ -37,7 +37,7 @@ type ServerRpcRouterProtocol<T extends RpcContract, Extend extends {}> = {
                 returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void;
                 removeRpc: () => void;
             } & ArgsType<T[K]["args"], undefined> & Extend) => Void>;
-}
+};
 
 type RpcRouterProtocol<
     T extends RpcContract,

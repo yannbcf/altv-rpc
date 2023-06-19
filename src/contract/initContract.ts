@@ -6,7 +6,7 @@ type RpcResult<T> = {
     data: T
 } | {
     success: false;
-}
+};
 
 type ClientRpcProtocol<T extends RpcContract> = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
@@ -16,7 +16,7 @@ type ClientRpcProtocol<T extends RpcContract> = {
         :(args: ArgsType<T[K]["args"], undefined>) => ArgsType<T[K]["returns"], undefined> extends undefined
             ? ArgsType<T[K]["returns"], void>
             : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>;
-}
+};
 
 type ServerRpcProtocol<T extends RpcContract, Player> = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
@@ -26,7 +26,7 @@ type ServerRpcProtocol<T extends RpcContract, Player> = {
         : (player: Player, args: ArgsType<T[K]["args"], undefined>) => ArgsType<T[K]["returns"], undefined> extends undefined
             ? ArgsType<T[K]["returns"], void>
             : Promise<RpcResult<ArgsType<T[K]["returns"], void>>>
-}
+};
 
 type RpcProtocol<
     T extends RpcContract,
