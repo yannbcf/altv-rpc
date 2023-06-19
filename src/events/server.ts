@@ -51,6 +51,10 @@ export type AltServerEvent = {
     metaChange: { target: alt.BaseObject; key: string; value: AllowedAny; oldValue: AllowedAny };
 };
 
+export type ServerEvent = AltServerEvent & {
+    removeEvent: () => void;
+};
+
 export function getAltServerEventKeys(): (keyof alt.IServerEvent)[] {
     const events = [
         "anyResourceError",

@@ -46,6 +46,10 @@ export type AltClientEvent = {
     entityHitEntity: { damager: alt.Entity; target: alt.Entity; weaponHash: number };
 };
 
+export type ClientEvent = AltClientEvent & {
+    removeEvent: () => void;
+};
+
 export function getAltClientEventKeys(): (keyof alt.IClientEvent)[] {
     const events = [
         "anyResourceError",
