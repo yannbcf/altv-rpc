@@ -194,7 +194,7 @@ const ct1 = contract.create("typecheck", {
 });
 
 // ct2 is now test1 args { kekw: number } and test2 args {}
-const ct2 = contract.extend(ct1, {
+const ct2 = contract.extend("no_typecheck", ct1, {
     test1: {
         args: z.object({
             kekw: z.number()
@@ -454,7 +454,7 @@ import * as alt from "alt-client";
 const $client = useTypes(alt);
 
 // ct is now notifyPlayer args { playerToNotify: (client side) alt.Player } and others args {}
-const ct = contract.extend(sharedCt, {
+const ct = contract.extend("no_typecheck", sharedCt, {
     notifyPlayer: {
         args: {
             playerToNotify: $client.player 
@@ -472,7 +472,7 @@ import * as alt from "alt-server";
 const $server = useTypes(alt);
 
 // ct is now notifyPlayer args { playerToNotify: (server side) alt.Player } and others args {}
-const ct = contract.extend(sharedCt, {
+const ct = contract.extend("no_typecheck", sharedCt, {
     notifyPlayer: {
         args: {
             playerToNotify: $server.player 
@@ -748,7 +748,7 @@ const $client = useTypes(alt);
 
 // net.notifyOtherPlayer({ otherPlayer: null /* never type */ });
 
-const exFromClientContract = contract.extend(fromClientContract, {
+const exFromClientContract = contract.extend("no_typecheck", fromClientContract, {
     notifyOtherPlayer: {
         args: z.object({
             otherPlayer: $client.player
@@ -788,7 +788,7 @@ const $server = useTypes(alt);
 //     },
 // });
 
-const exFromClientContract = contract.extend(fromClientContract, {
+const exFromClientContract = contract.extend("no_typecheck", fromClientContract, {
     notifyOtherPlayer: {
         args: z.object({
             otherPlayer: $server.player
