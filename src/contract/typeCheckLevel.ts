@@ -1,4 +1,4 @@
-import type { RpcContract, TypeCheckLevel, ContractTypeCheckLevel } from "./types.ts";
+import type { RpcContract, TypeCheckLevel, ContractTypeCheckLevel } from "../types.ts";
 
 const contractTypeCheckLevel = new Map<RpcContract, TypeCheckLevel>();
 

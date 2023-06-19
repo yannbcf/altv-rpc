@@ -1,4 +1,4 @@
-import type { ArgsType, Envs, AllowedAny, Callback, EmitFn, RpcContract } from "./types.ts";
+import type { ArgsType, Envs, AllowedAny, Callback, EmitFn, RpcContract } from "../types.ts";
 import { z } from "zod";
 
 type RpcResult<T> = {

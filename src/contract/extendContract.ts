@@ -1,4 +1,4 @@
-import type { RpcContract, ContractTypeCheckLevel } from "./types.ts";
+import type { RpcContract, ContractTypeCheckLevel } from "../types.ts";
 import { setTypeCheckLevel } from "./typeCheckLevel.ts";
 
 type ExtendedContract<Contract1 extends RpcContract, Contract2 extends RpcContract> = {

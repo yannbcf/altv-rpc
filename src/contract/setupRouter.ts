@@ -1,5 +1,5 @@
 
-import type { TypeCheckLevel, ArgsType, Envs, Callback, EmitFn, RpcContract, AllowedAny } from "./types.ts";
+import type { TypeCheckLevel, ArgsType, Envs, Callback, EmitFn, RpcContract, AllowedAny } from "../types.ts";
 
 import { getTypeCheckLevel } from "./typeCheckLevel.ts";
 import { z } from "zod";
