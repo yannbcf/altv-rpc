@@ -1,5 +1,11 @@
 # @yannbcf/altv-rpc
 
+## 0.4.7
+
+### Patch Changes
+
+- Implement self rpc removal mechanism
+
 ## 0.4.6
 
 ### Patch Changes
