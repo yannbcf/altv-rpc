@@ -1,9 +1,12 @@
-import { type AltClientEvent, getAltClientEventKeys, adaptAltClientEvent } from "./client.ts";
-import { type AltServerEvent, getAltServerEventKeys, adaptAltServerEvent } from "./server.ts";
-import type { Callback, AllowedAny } from "../types.ts";
+import { type AltClientEvent, getAltClientEventKeys, adaptAltClientEvent } from "./events/client.ts";
+import { type AltServerEvent, getAltServerEventKeys, adaptAltServerEvent } from "./events/server.ts";
+import type { Callback, AllowedAny } from "./types.ts";
 
 import type * as altClient from "alt-client";
 import type * as altServer from "alt-server";
+
+export type { ClientEvent } from "./events/client.ts";
+export type { ServerEvent } from "./events/server.ts";
 
 type Events<T extends {}> = {
     [K in keyof T as `on${Capitalize<K & string>}`]: (
