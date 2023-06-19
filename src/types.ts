@@ -20,3 +20,7 @@ export type RpcContract = {
         returns?: z.ZodType<AllowedAny, AllowedAny>;
     }
 }
+
+type CheckEqual<T, U> = [T] extends [U] ? ([U] extends [T] ? true : never) : never;
+type ExtractStringUnion<T extends readonly string[]> = T[number];
+export type AssertObjectKeysInArray<T extends readonly string[], U extends {}, V> = CheckEqual<ExtractStringUnion<T>, keyof U> extends never ? {} : V;
