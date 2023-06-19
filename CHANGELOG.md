@@ -1,5 +1,11 @@
 # @yannbcf/altv-rpc
 
+## 0.4.5
+
+### Patch Changes
+
+- Replace $client and $server with the useTypes method, which remove the useage of subpath imports
+
 ## 0.4.3
 
 ### Patch Changes
