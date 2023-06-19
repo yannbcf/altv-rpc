@@ -1,10 +1,10 @@
-import { $server } from "@yannbcf/altv-rpc/$server";
-import { contract } from "@yannbcf/altv-rpc";
-
+import { contract, useTypes } from "@yannbcf/altv-rpc";
 import { fromClientContract } from "./shared.ts";
 import { z } from "zod";
 
 import * as alt from "alt-server";
+
+const $server = useTypes(alt);
 
 // rpc.initContractRouter("server", fromClientContract, {
 //     on: alt.onClient,
@@ -17,7 +17,7 @@ import * as alt from "alt-server";
 //     },
 // });
 
-const exFromClientContract = contract.extend(fromClientContract, {
+const exFromClientContract = contract.extend("no_typecheck", fromClientContract, {
     notifyOtherPlayer: {
         args: z.object({
             otherPlayer: $server.player
