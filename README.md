@@ -26,7 +26,7 @@ altv-rpc is a library empowering your developer experience by providing you a ty
 
 - [Table of content](#table-of-content)
 - [Api definition](#api-definition)
-    - [useEvents]()
+    - [useEvents](#useevents)
     - [contract](#contract)
         - [`.create`](#contract-creation)
             - [ofuscate event names](#contract-creation)
