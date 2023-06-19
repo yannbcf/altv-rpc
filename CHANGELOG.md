@@ -1,5 +1,21 @@
 # @yannbcf/altv-rpc
 
+## 0.4.1
+
+### Patch Changes
+
+- Implement useEvents which add support for the alt:V local events
+
+## 0.4.0
+
+### Minor Changes
+
+- Add rpc contract internal event name generator function support
+
+### Patch Changes
+
+- Add local events support
+
 ## 0.3.6
 
 ### Patch Changes
