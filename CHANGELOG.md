@@ -1,5 +1,11 @@
 # @yannbcf/altv-rpc
 
+## 0.4.6
+
+### Patch Changes
+
+- Fix library types
+
 ## 0.4.5
 
 ### Patch Changes
