@@ -259,6 +259,7 @@ const ct = contract.create("typecheck", {
 
 contract.setupRouter("server", ct, {
     on: alt.onClient,
+    off: alt.offClient,
     emit: alt.emitClient
 }, {
     // args: { player: alt.Player, playerId: number }
@@ -316,6 +317,7 @@ const ct = contract.create("no_typecheck", {
 
 contract.setupRouter("server", ct, {
     on: alt.onClient,
+    off: alt.offClient,
     emit: alt.emitClient
 }, {
     test: (args) => {
@@ -331,6 +333,7 @@ contract.setupRouter("server", ct, {
 
 contract.setupRouter("server", ct, {
     on: alt.onClient,
+    off: alt.offClient,
     emit: alt.emitClient
 }, {
     test: (args) => {
@@ -346,6 +349,7 @@ contract.setupRouter("server", ct, {
 
 contract.setupRouter("server", ct, {
     on: alt.onClient,
+    off: alt.offClient,
     emit: alt.emitClient
 }, {
     test: (args) => {
@@ -360,6 +364,7 @@ contract.setupRouter("server", ct, {
 
 contract.setupRouter("server", ct, {
     on: alt.onClient,
+    off: alt.offClient,
     emit: alt.emitClient
 }, {
     test: (args) => {
@@ -535,6 +540,7 @@ const webview = new alt.WebView("...");
 
 contract.setupRouter("client", fromWebviewContract, {
     on: webview.on,
+    off: webview.off,
     emit: webview.emit
 }, {
     inventoryMove: () => {
@@ -559,6 +565,8 @@ import { contract } from "@yannbcf/altv-rpc";
 contract.setupRouter("web", fromClientContract, {
     // @ts-expect-error method exposed in the alt:V webengine (cef)
     on: alt.on,
+    // @ts-expect-error method exposed in the alt:V webengine (cef)
+    off: alt.off,
     // @ts-expect-error method exposed in the alt:V webengine (cef)
     emit: alt.emit
 }, {
@@ -627,6 +635,7 @@ import * as alt from "alt-client";
 
 contract.setupRouter("client", fromServerContract, {
     on: alt.onServer,
+    off: alt.offServer,
     emit: alt.emitServerRaw
 }, {
     noResponse: (args) => {
@@ -675,6 +684,7 @@ import * as alt from "alt-server";
 
 contract.setupRouter("server", fromClientContract, {
     on: alt.onClient,
+    off: alt.offClient,
     emit: alt.emitClientRaw
 }, {
     noResponse: ({ player, apples }) => {
@@ -798,6 +808,7 @@ const exFromClientContract = contract.extend("no_typecheck", fromClientContract,
 
 contract.setupRouter("server", exFromClientContract, {
     on: alt.onClient,
+    off: alt.offClient,
     emit: alt.emitClient
 }, {
     notifyOtherPlayer: (args) => {
