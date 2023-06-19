@@ -1,5 +1,17 @@
 # @yannbcf/altv-rpc
 
+## 0.4.3
+
+### Patch Changes
+
+- Expose ClientEvent and ServerEvent types, allowing external type inference
+
+## 0.4.2
+
+### Patch Changes
+
+- Fix library types
+
 ## 0.4.1
 
 ### Patch Changes
