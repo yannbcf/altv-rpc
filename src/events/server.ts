@@ -51,9 +51,9 @@ export type AltServerEvent = {
     metaChange: { target: alt.BaseObject; key: string; value: AllowedAny; oldValue: AllowedAny };
 };
 
-export type ServerEvent = AltServerEvent & {
-    removeEvent: () => void;
-};
+export type ServerEvent = {
+    [K in keyof AltServerEvent]: AltServerEvent[K] & { removeEvent: () => void }
+}
 
 export function getAltServerEventKeys(): (keyof alt.IServerEvent)[] {
     const events = [

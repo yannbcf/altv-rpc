@@ -46,9 +46,9 @@ export type AltClientEvent = {
     entityHitEntity: { damager: alt.Entity; target: alt.Entity; weaponHash: number };
 };
 
-export type ClientEvent = AltClientEvent & {
-    removeEvent: () => void;
-};
+export type ClientEvent = {
+    [K in keyof AltClientEvent]: AltClientEvent[K] & { removeEvent: () => void }
+}
 
 export function getAltClientEventKeys(): (keyof alt.IClientEvent)[] {
     const events = [
