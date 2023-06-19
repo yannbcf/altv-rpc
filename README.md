@@ -38,8 +38,6 @@ altv-rpc is a library empowering your developer experience by providing you a ty
         - .setTypeCheckLevel
     - [$typeOnly](#typeonly)
     - [alt:V built in types](#altv-built-in-types)
-        - $client
-        - $server
 - [Installation](#installation)
 - [Examples](#examples)
 
@@ -383,10 +381,12 @@ Do you want to declare a schema without the runtime type checking ? The ``$typeO
 
 ```ts
 // server.ts
-import { contract, $server, $typeOnly } from "@yannbcf/altv-rpc";
+import { contract, $typeOnly, useTypes } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
 import * as alt from "alt-server";
+
+const $server = useTypes(alt);
 
 const ct = contract.create("typecheck", {
     name: {
@@ -424,20 +424,14 @@ const ct = contract.create("typecheck", {
 
 ## Alt:V built-in types
 
-> Why does $client and $server are since @0.3.6 in a subpath import ? Simply because before that modification, the alt:V built-in types were not type checkable at runtime. The $client and $server helpers colocation with the library main entry point caused issues with the runtime alt imports
-
 As you may have noticed it, the contracts only accept zod privitimes/objects. Those are runtime data type checks and it works really well with typescript type inference
 
 You may also know that there is no "shared" alt.Player class (just as an example), the client and server player are different entities, have different properties, so how can we use contracts in an easy way when they're meant to be created in a shared environment ?
 
-My recommended approach, is to create a shared contract, and replace the alt:V built-in types with the ``$shared`` helpers, which will basically infer the type to ``never``, making it imposible to use without overriding the contract with the rpc ``$client`` and ``$server`` helpers in the correct environments
+My recommended approach, is to create a shared contract, and replace the alt:V built-in types with the ``$shared`` helpers, which will basically infer the type to ``never``, making it imposible to use without overriding the contract with the rpc `useTypes` helpers in the correct environments
 
 ```ts
-// shared.ts
-import { $shared } from "@yannbcf/altv-rpc/$shared";
-// OR
 import { contract, $shared } from "@yannbcf/altv-rpc";
-
 import { z } from "zod";
 
 export const sharedCt = contract.create("typecheck", {
@@ -451,12 +445,13 @@ export const sharedCt = contract.create("typecheck", {
 });
 
 // client.ts
-import { $client } from "@yannbcf/altv-rpc/$client";
-import { contract } from "@yannbcf/altv-rpc";
-
+import { contract, useTypes } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
 import { sharedCt } from "./shared.ts";
+import * as alt from "alt-client";
+
+const $client = useTypes(alt);
 
 // ct is now notifyPlayer args { playerToNotify: (client side) alt.Player } and others args {}
 const ct = contract.extend(sharedCt, {
@@ -468,11 +463,13 @@ const ct = contract.extend(sharedCt, {
 });
 
 // server.ts
-import { $server } from "@yannbcf/altv-rpc/$server";
-import { contract } from "@yannbcf/altv-rpc";
+import { contract, useTypes } from "@yannbcf/altv-rpc";
 import { z } from "zod";
 
 import { sharedCt } from "./shared.ts";
+import * as alt from "alt-server";
+
+const $server = useTypes(alt);
 
 // ct is now notifyPlayer args { playerToNotify: (server side) alt.Player } and others args {}
 const ct = contract.extend(sharedCt, {
@@ -734,13 +731,14 @@ export const fromClientContract = contract.create("typecheck", {
 
 [client.ts](./examples/extending-contract/client.ts)
 ```ts
-import { $client } from "@yannbcf/altv-rpc/$client";
-import { contract } from "@yannbcf/altv-rpc";
+import { contract, useTypes } from "@yannbcf/altv-rpc";
 
 import { fromClientContract } from "./shared.ts";
 import { z } from "zod";
 
 import * as alt from "alt-client";
+
+const $client = useTypes(alt);
 
 // const net = rpc.initContract("client", fromClientContract, {
 //     once: alt.onceServer,
@@ -770,13 +768,14 @@ net.notifyOtherPlayer({ otherPlayer: alt.Player.local });
 
 [server.ts](./examples/extending-contract/server.ts)
 ```ts
-import { $server } from "@yannbcf/altv-rpc/$server";
-import { contract } from "@yannbcf/altv-rpc";
+import { contract, useTypes } from "@yannbcf/altv-rpc";
 
 import { fromClientContract } from "./shared.ts";
 import { z } from "zod";
 
 import * as alt from "alt-server";
+
+const $server = useTypes(alt);
 
 // rpc.initContractRouter("server", fromClientContract, {
 //     on: alt.onClient,

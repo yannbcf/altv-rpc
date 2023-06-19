@@ -7,22 +7,10 @@
     "types": "./dist/index.d.ts",
     "files": [
         "dist/index.d.ts",
-        "dist/index.js",
-        "dist/$client.js",
-        "dist/$client.d.ts",
-        "dist/$server.js",
-        "dist/$server.d.ts",
-        "dist/$shared.js",
-        "dist/$shared.d.ts",
-        "dist/$typeOnly.js",
-        "dist/$typeOnly.d.ts"
+        "dist/index.js"
     ],
     "exports": {
-        ".": "./dist/index.js",
-        "./$client": "./dist/$client.js",
-        "./$server": "./dist/$server.js",
-        "./$shared": "./dist/$shared.js",
-        "./$typeOnly": "./dist/$typeOnly.js"
+        ".": "./dist/index.js"
     },
     "scripts": {
         "b.update-binaries": "node tools/update-binaries.js --baseFolder binaries",
