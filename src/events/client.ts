@@ -48,7 +48,7 @@ export type AltClientEvent = {
 
 export type ClientEvent = {
     [K in keyof AltClientEvent]: AltClientEvent[K] & { removeEvent: () => void }
-}
+};
 
 export function getAltClientEventKeys(): (keyof alt.IClientEvent)[] {
     const events = [

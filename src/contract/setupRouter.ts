@@ -11,20 +11,32 @@ type ClientRpcRouterProtocol<T extends RpcContract> = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
         ? ArgsType<T[K]["returns"], undefined> extends undefined
             ? O<() => Void>
-            : O<(args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void }) => Void>
+            : O<(args: {
+                returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void;
+                removeRpc: () => void;
+            }) => Void>
         : ArgsType<T[K]["returns"], undefined> extends undefined
             ? O<(args: ArgsType<T[K]["args"], undefined>) => Void>
-            : O<(args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined>) => Void>;
+            : O<(args: {
+                returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void;
+                removeRpc: () => void;
+            } & ArgsType<T[K]["args"], undefined>) => Void>;
 }
 
 type ServerRpcRouterProtocol<T extends RpcContract, Extend extends {}> = {
     [K in keyof T]: ArgsType<T[K]["args"], undefined> extends undefined
         ? ArgsType<T[K]["returns"], undefined> extends undefined
             ? O<(args: Extend) => Void>
-            : O<(args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & Extend) => Void>
+            : O<(args: {
+                returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void;
+                removeRpc: () => void;
+            } & Extend) => Void>
         : ArgsType<T[K]["returns"], undefined> extends undefined
             ? O<(args: ArgsType<T[K]["args"], undefined> & Extend) => Void>
-            : O<(args: { returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void } & ArgsType<T[K]["args"], undefined> & Extend) => Void>;
+            : O<(args: {
+                returnValue: (returnValue: ArgsType<T[K]["returns"], void>) => void;
+                removeRpc: () => void;
+            } & ArgsType<T[K]["args"], undefined> & Extend) => Void>;
 }
 
 type RpcRouterProtocol<
@@ -44,6 +56,7 @@ export function setupRouter<
     rpcContract: T,
     opts: {
         on: (eventName: string, listener: Callback) => void;
+        off: (eventName: string, listener: Callback) => void;
         emit: Env extends "server"
             ? (player: Player, eventName: string, ...args: unknown[]) => void
             : (eventName: string, ...args: unknown[]) => void;
@@ -59,7 +72,7 @@ export function setupRouter<
                 : `${_rpc.internalEventName}`
             : rpcName;
 
-        opts.on(_rpcName, async (...args) => {
+        const listener = async (...args: unknown[]) => {
             const parser = _rpc?.args;
 
             const bindingRpc = bindings[rpcName];
@@ -84,6 +97,10 @@ export function setupRouter<
             const returnsValueParser = _rpc.returns;
             if (returnsValueParser !== undefined && !(returnsValueParser instanceof z.ZodVoid) && !(returnsValueParser instanceof z.ZodUndefined)) {
                 let hasReturned = false;
+
+                typedArgs.removeRpc = () => {
+                    opts.off(_rpcName, listener);
+                };
 
                 typedArgs.returnValue = (returnValue: typeof _rpc.returns) => {
                     const [typedReturnValue, error]: [AllowedAny, AllowedAny] = ["typecheck", "typecheck_returns"].includes(typecheckLevel)
@@ -117,6 +134,8 @@ export function setupRouter<
             }
 
             rpcCall(typedArgs);
-        });
+        };
+
+        opts.on(_rpcName, listener);
     }
 }
