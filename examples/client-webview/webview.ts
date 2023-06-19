@@ -5,6 +5,8 @@ contract.setupRouter("web", fromClientContract, {
     // @ts-expect-error method exposed in the alt:V webengine (cef)
     on: alt.on,
     // @ts-expect-error method exposed in the alt:V webengine (cef)
+    off: alt.off,
+    // @ts-expect-error method exposed in the alt:V webengine (cef)
     emit: alt.emit
 }, {
     // args: { speedo: number }

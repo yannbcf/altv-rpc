@@ -27,6 +27,7 @@ const exFromClientContract = contract.extend("no_typecheck", fromClientContract,
 
 contract.setupRouter("server", exFromClientContract, {
     on: alt.onClient,
+    off: alt.offClient,
     emit: alt.emitClient
 }, {
     notifyOtherPlayer: (args) => {

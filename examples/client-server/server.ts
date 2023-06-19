@@ -4,6 +4,7 @@ import * as alt from "alt-server";
 
 contract.setupRouter("server", fromClientContract, {
     on: alt.onClient,
+    off: alt.offClient,
     emit: alt.emitClientRaw
 }, {
     noResponse: ({ player, apples }) => {

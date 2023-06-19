@@ -6,6 +6,7 @@ const webview = new alt.WebView("...");
 
 contract.setupRouter("client", fromWebviewContract, {
     on: webview.on,
+    off: webview.off,
     emit: webview.emit
 }, {
     inventoryMove: () => {
