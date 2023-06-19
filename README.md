@@ -26,6 +26,7 @@ altv-rpc is a library empowering your developer experience by providing you a ty
 
 - [Table of content](#table-of-content)
 - [Api definition](#api-definition)
+    - [useEvents]()
     - [contract](#contract)
         - [`.create`](#contract-creation)
             - [ofuscate event names](#contract-creation)
@@ -43,6 +44,85 @@ altv-rpc is a library empowering your developer experience by providing you a ty
 - [Examples](#examples)
 
 # Api definition
+
+## UseEvents
+
+Since @0.4.0 you can subscribe to local alt events.
+
+```ts
+// server.ts
+import { useEvents } from "@yannbcf/altv-rpc";
+import * as alt from "alt-server";
+
+const events = useEvents(alt);
+
+// args: { player: alt.Player, removeEvent: () => void }
+events.onPlayerConnect((args) => {
+    // unsubscribe the event handler
+    args.removeEvent();
+});
+
+events.onPlayerConnect((args) => {
+    // will fire only one time
+}, { once: true });
+```
+
+You can also subscribe to multiple events at once
+
+```ts
+// client.ts
+import { useEvents } from "@yannbcf/altv-rpc";
+import * as alt from "alt-client";
+
+const events = useEvents(alt);
+
+events.on({
+    // args: { key: alt.KeyCode, removeEvent: () => void }
+    keydown: (args) => {
+        //
+    },
+    // args: { name: string, args: string[] }
+    consoleCommand: (args) => {
+        //
+    }
+})
+```
+
+You can also check if an event has x handler setup
+
+```ts
+// server.ts
+import { useEvents, type ServerEvent } from "@yannbcf/altv-rpc";
+import * as alt from "alt-server";
+
+const events = useEvents(alt);
+
+// args: { player: alt.Player, removeEvent: () => void }
+function handler(args: ServerEvent["playerConnect"]): void {
+    //    
+}
+
+events.has("playerConnect", handler); // false
+events.onPlayerConnect(handler);
+events.has("playerConnect", handler); // true
+```
+And finally you can remove manually an event
+
+```ts
+// server.ts
+import { useEvents, type ServerEvent } from "@yannbcf/altv-rpc";
+import * as alt from "alt-server";
+
+const events = useEvents(alt);
+
+// args: { player: alt.Player, removeEvent: () => void }
+function handler(args: ServerEvent["playerConnect"]): void {
+    //    
+}
+
+events.onPlayerConnect(handler);
+events.remove("playerConnect", handler);
+```
 
 ## Contract
 > :warning: Ideally you want to create your contracts in a **shared environement** as you will init it in one side, and route it on the other
