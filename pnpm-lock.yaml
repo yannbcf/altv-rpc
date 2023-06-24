@@ -22,6 +22,9 @@ devDependencies:
   '@altv/types-shared':
     specifier: ^1.4.9
     version: 1.4.9
+  '@altv/types-webview':
+    specifier: ^1.0.5
+    version: 1.0.5
   '@altv/types-worker':
     specifier: ^1.0.7
     version: 1.0.7(@altv/types-client@2.7.2)
@@ -83,6 +86,10 @@ packages:
 
   /@altv/types-shared@1.4.9:
     resolution: {integrity: sha512-hiexukCQAYOnxH6BcSd6xIOyHXMOUqHoRS4Ly9lxpraguqAtJdEAzoi8ml6QZSzoaA0+3KBoqsgMcnKi2+5evg==}
+    dev: true
+
+  /@altv/types-webview@1.0.5:
+    resolution: {integrity: sha512-g1bYnkLLxhJr6CBq0qFZoJtzs+20nEmHBMftlAGAgEJsyKR5HWf0NUi2mmUS50IpVEsULqgK+hx4uRZpXLmS7A==}
     dev: true
 
   /@altv/types-worker@1.0.7(@altv/types-client@2.7.2):
