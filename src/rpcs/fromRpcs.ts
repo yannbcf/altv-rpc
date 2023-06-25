@@ -7,7 +7,7 @@ import type { Binding, Bindable } from "./bind.ts";
 import type * as altClient from "alt-client";
 import type * as altServer from "alt-server";
 
-import { assert, getRpcFlowInfos, upperCaseFirstLetter } from "../utils.ts";
+import { assert, getRpcFlowInfos, getRpcInfos, upperCaseFirstLetter } from "../utils.ts";
 import { z } from "zod";
 
 export type AgnosticFromRpc<W extends Readonly<string[]>, T extends RpcContract<W>[keyof RpcContract<W>]> = ArgsType<
@@ -74,119 +74,74 @@ function check<Env extends Bindable, WNames extends Readonly<string[]>, T extend
     const [from, to] = getRpcFlowInfos(rpc.flow);
     const { env, rpcName, binding } = rpcInfos;
 
-    if (env === "webview") {
-        // webview: not client->x | server->x
-        if (!["client", "server"].includes(from)) {
-            return false;
-        }
-
-        const webviewName = (opts as { webviewName?: string }).webviewName;
-        assert(webviewName !== undefined);
-
-        // webview: client->webview:name | server->webview:name
-        return to === `webview:${webviewName}`;
-    }
-
-    if (env === "client") {
-        console.log("client:", from, to);
-
-        // client(bridge): webview:x->server
-        if (from.startsWith("webview") && to === "server") {
-            binding.on(rpcName, (...args: unknown[]) => {
-                (envBinding as Binding<typeof altClient>).emit(rpcName, ...args);
-            });
-
-            if (rpc.returns !== undefined) {
-                envBinding.on(`_${rpcName}`, (...args: unknown[]) => {
-                    (binding as Binding<typeof altClient>).emit(`_${rpcName}`, ...args);
-                });
+    switch (env) {
+        case "webview": {
+            // webview: not client->x | server->x
+            if (!["client", "server"].includes(from)) {
+                return false;
             }
 
-            return false;
+            const webviewName = (opts as { webviewName?: string }).webviewName;
+            assert(webviewName !== undefined);
+
+            // webview: client->webview:name | server->webview:name
+            return to === `webview:${webviewName}`;
         }
 
-        // client(bridge): server->webview:x
-        if (from === "server" && to.startsWith("webview")) {
-            envBinding.on(rpcName, (...args: unknown[]) => {
-                (binding as Binding<typeof altClient>).emit(rpcName, ...args);
-            });
-
-            if (rpc.returns !== undefined) {
-                console.log("client: should setup bridge event");
-                binding.on(`_${rpcName}`, (...args: unknown[]) => {
-                    (envBinding as Binding<typeof altClient>).emit(`_${rpcName}`, ...args);
+        case "client": {
+            // client(bridge): webview:x->server
+            if (from.startsWith("webview") && to === "server") {
+                binding.on(rpcName, (...args: unknown[]) => {
+                    (envBinding as Binding<typeof altClient>).emit(rpcName, ...args);
                 });
+
+                if (rpc.returns !== undefined) {
+                    envBinding.on(`_${rpcName}`, (...args: unknown[]) => {
+                        (binding as Binding<typeof altClient>).emit(`_${rpcName}`, ...args);
+                    });
+                }
+
+                return false;
             }
 
-            return false;
+            // client(bridge): server->webview:x
+            if (from === "server" && to.startsWith("webview")) {
+                envBinding.on(rpcName, (...args: unknown[]) => {
+                    (binding as Binding<typeof altClient>).emit(rpcName, ...args);
+                });
+
+                if (rpc.returns !== undefined) {
+                    console.log("client: should setup bridge event");
+                    binding.on(`_${rpcName}`, (...args: unknown[]) => {
+                        (envBinding as Binding<typeof altClient>).emit(`_${rpcName}`, ...args);
+                    });
+                }
+
+                return false;
+            }
+
+            // client: not webview:x->x | server->x
+            if (!from.startsWith("webview") && from !== "server") {
+                return false;
+            }
+
+            // client: webview:x->client | server->client
+            return to === "client";
         }
 
-        if (!from.startsWith("webview") && from !== "server") {
-            return false;
+        case "server": {
+            // server: not webview:x->x | server->x
+            if (!from.startsWith("webview") && from !== "client") {
+                return false;
+            }
+
+            // server: webview:x->server | server->server
+            return to === "server";
         }
 
-        return to === "client";
+        default:
+            return false;
     }
-
-    if (env === "server") {
-        if (!from.startsWith("webview") && from !== "client") {
-            return false;
-        }
-
-        return to === "server";
-    }
-
-    return false;
-}
-
-function getRpcInfos<Env extends Bindable, WNames extends Readonly<string[]>, T extends RpcContract<[]>>(
-    rpc: T[keyof T],
-    _rpcName: string,
-    envBinding: Binding<Bindable>,
-    localBinding: Binding<"local">,
-    opts: Env extends typeof altClient | typeof altServer
-        ? {
-              bindings: Bindings<WNames, Env>;
-          }
-        : {
-              webviewName: WNames[number];
-              bindings: Bindings<WNames, Env>;
-          }
-) {
-    const env = envBinding.__env!;
-    const isAltServerEnv = rpc.flow !== "local" && env === "server";
-
-    const rpcName =
-        rpc.internalEventName !== undefined
-            ? typeof rpc.internalEventName === "function"
-                ? `${rpc.internalEventName(_rpcName)}`
-                : `${rpc.internalEventName}`
-            : _rpcName;
-
-    const binding =
-        env === "client" && rpc.flow.includes("webview")
-            ? (() => {
-                let webviewName = rpc.flow.split(":")[1];
-                assert(webviewName !== undefined);
-
-                webviewName = webviewName.split("->")[0];
-                assert(webviewName !== undefined);
-
-                  // @ts-expect-error tkt
-                const webviewBinding = opts.bindings[webviewName];
-                assert(webviewBinding !== undefined, `[altv-rpc] The webview ${webviewName} is not registered.`);
-                return webviewBinding as Binding<"local">;
-            })()
-            : rpc.flow !== "local"
-                ? envBinding
-                : localBinding;
-
-    return {
-        env,
-        isAltServerEnv,
-        rpcName,
-        binding,
-    };
 }
 
 export function buildFromRpcs<
