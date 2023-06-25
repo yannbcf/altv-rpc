@@ -1,6 +1,9 @@
 import type { AllowedAny, Envs } from "../types.ts";
 import { Binding, Bindable } from "./bind.ts";
 
+import type * as altClient from "alt-client";
+import type * as altServer from "alt-server";
+
 import { useContract } from "./useContract.ts";
 import { z } from "zod";
 
@@ -23,51 +26,38 @@ export type RpcContract<W extends Readonly<string[]>> = {
     };
 };
 
-type B<W extends Readonly<string[]>> = {
-    webviewNames?: W;
-    namespaces: {
-        [namespace: string]: `webview:${W[number]}` | "client";
-    };
-};
-
-function test<W extends Readonly<string[]>>(b: B<W>): void {
-    // do something with the B object
-}
-
-test({
-    webviewNames: ["t"] as const,
-    namespaces: {
-        test: "webview:t",
-    },
-});
-
-export function createContract<W extends Readonly<string[]>, T extends CreateContract<W>>(
-    contract: CreateContract<W> & T
+export function createContract<WNames extends Readonly<string[]>, Contract extends CreateContract<WNames>>(
+    contract: CreateContract<WNames> & Contract
 ) {
     return {
-        use: <Env extends Bindable>(
+        use: <WName extends WNames[number], Env extends Bindable>(
             bindable: Env,
-            opts: {
-                bindings: Bindings<W, Env>;
-            }
-        ) => useContract<W, T, Env>(contract, bindable, opts),
+            opts: Env extends typeof altClient | typeof altServer
+                ? {
+                      bindings: Bindings<WNames, Env>;
+                  }
+                : {
+                      webviewName: WName;
+                      bindings: Bindings<WNames, Env>;
+                  }
+        ) => useContract<WNames, WName, Contract, Env>(contract, bindable, opts),
     };
 }
 
 type _<T extends Bindable> = Partial<Omit<Binding<T>, "__env">>;
 
-export type Bindings<W extends Readonly<string[]>, Env extends Bindable> = Env extends import("alt-client").WebView
+export type Bindings<W extends Readonly<string[]>, Env extends Bindable> = Env extends altClient.WebView
     ? { local?: _<Binding<"local">> }
-    : Env extends typeof import("alt-client")
+    : Env extends typeof altClient
     ? // ? { local?: _<Binding<"local">>; client?: _<typeof import("alt-client")> }
-      { [K in W[number]]: import("alt-client").WebView } & {
+      { [K in W[number]]: altClient.WebView } & {
           local?: _<Binding<"local">>;
-          client?: _<typeof import("alt-client")>;
+          client?: _<typeof altClient>;
       }
-    : Env extends typeof import("alt-server")
+    : Env extends typeof altServer
     ? {
           local?: _<Binding<"local">>;
-          server?: _<typeof import("alt-server")>;
+          server?: _<typeof altServer>;
       }
     : Env extends Binding<"local">
     ? { local?: _<Binding<"local">> }
