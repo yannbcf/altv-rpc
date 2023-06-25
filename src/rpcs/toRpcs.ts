@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import type { AllowedAny, Envs, ArgsType } from "../types.ts";
-import type { RpcContract, Bindings } from "./createContract.ts";
+import type { AllowedAny, Envs, RpcContract, ArgsType } from "../types.ts";
+import type { Bindings } from "./createContract.ts";
 import type { Binding, Bindable } from "./bind.ts";
 
 import type * as altClient from "alt-client";

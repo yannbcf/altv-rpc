@@ -14,8 +14,12 @@ export type EmitFn<Player, TEnv extends Envs> = TEnv extends "server"
     ? (player: Player, eventName: string, ...args: unknown[]) => void
     : (eventName: string, ...args: unknown[]) => void;
 
-export type RpcContract = {
+type ExcludeEqual<T extends string> = T extends `${infer U}->${infer V}` ? (U extends V ? never : T) : never;
+type _Envs<W extends Readonly<string[]>> = Exclude<Envs | `webview:${W[number]}`, "webview">;
+
+export type RpcContract<WName extends Readonly<string[]>> = {
     [rpcName: string]: {
+        flow: ExcludeEqual<`${_Envs<WName>}->${_Envs<WName>}`> | "local";
         internalEventName?: string | number | ((rpcName: string) => string | number);
         args?: z.AnyZodObject;
         returns?: z.ZodType<AllowedAny, AllowedAny>;

@@ -18,7 +18,10 @@ import type * as altServer from "alt-server";
 import { EventsCluter } from "../eventsCluter.ts";
 import { Bindings } from "./createContract.ts";
 
-function getCurrentEnvOverride<W extends Readonly<string[]>>(envKey: string, envBinding: Bindings<W, Bindable>) {
+function getCurrentEnvOverride<WName extends Readonly<string[]>>(
+    envKey: string,
+    envBinding: Bindings<WName, Bindable>
+) {
     for (const key in envBinding) {
         // @ts-expect-error TODO(yann): fix type
         if (key === envKey) return envBinding[key] as Bindable;

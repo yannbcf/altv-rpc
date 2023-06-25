@@ -31,12 +31,25 @@ export type AltClientEvent = {
     netOwnerChange: { entity: alt.Entity; owner: alt.Player | null; oldOwner: alt.Player | null };
     windowFocusChange: { isFocused: boolean };
     windowResolutionChange: { oldResolution: alt.Vector2; newResolution: alt.Vector2 };
-    playerAnimationChange: { target: alt.Player; oldAnimDict: number; newAnimDict: number; oldAnimName: number; newAnimName: number };
+    playerAnimationChange: {
+        target: alt.Player;
+        oldAnimDict: number;
+        newAnimDict: number;
+        oldAnimName: number;
+        newAnimName: number;
+    };
     playerWeaponShoot: { weaponHash: number; totalAmmo: number; ammoInClip: number };
     playerWeaponChange: { oldWeapon: number; newWeapon: number };
     baseObjectCreate: { baseObject: alt.BaseObject };
     baseObjectRemove: { baseObject: alt.BaseObject };
-    weaponDamage: { target: alt.Entity; weaponHash: number; damage: number; offset: alt.Vector3; bodyPart: alt.BodyPart; sourceEntity: alt.Entity };
+    weaponDamage: {
+        target: alt.Entity;
+        weaponHash: number;
+        damage: number;
+        offset: alt.Vector3;
+        bodyPart: alt.BodyPart;
+        sourceEntity: alt.Entity;
+    };
     worldObjectPositionChange: { object: alt.WorldObject; oldPosition: alt.Vector3 };
     worldObjectStreamIn: { object: alt.WorldObject };
     worldObjectStreamOut: { object: alt.WorldObject };
@@ -47,7 +60,7 @@ export type AltClientEvent = {
 };
 
 export type ClientEvent = {
-    [K in keyof AltClientEvent]: AltClientEvent[K] & { removeEvent: () => void }
+    [K in keyof AltClientEvent]: AltClientEvent[K] & { removeEvent: () => void };
 };
 
 export function getAltClientEventKeys(): (keyof alt.IClientEvent)[] {
@@ -93,13 +106,16 @@ export function getAltClientEventKeys(): (keyof alt.IClientEvent)[] {
         "metaChange",
         "entityEnterColshape",
         "entityLeaveColshape",
-        "entityHitEntity"
+        "entityHitEntity",
     ] as const;
 
     return events as unknown as AssertObjectKeysInArray<typeof events, alt.IClientEvent, (keyof alt.IClientEvent)[]>;
 }
 
-export function adaptAltClientEvent<T extends keyof alt.IClientEvent>(eventName: T, ...args: Parameters<alt.IClientEvent[T]>) {
+export function adaptAltClientEvent<T extends keyof alt.IClientEvent>(
+    eventName: T,
+    ...args: Parameters<alt.IClientEvent[T]>
+) {
     switch (eventName) {
         case "anyResourceError":
         case "anyResourceStart":
@@ -226,7 +242,13 @@ export function adaptAltClientEvent<T extends keyof alt.IClientEvent>(eventName:
         }
 
         case "playerAnimationChange": {
-            const params = { target: args[0], oldAnimDict: args[1], newAnimDict: args[2], oldAnimName: args[3], newAnimName: args[4] };
+            const params = {
+                target: args[0],
+                oldAnimDict: args[1],
+                newAnimDict: args[2],
+                oldAnimName: args[3],
+                newAnimName: args[4],
+            };
             return params as AltClientEvent[T];
         }
 
@@ -251,7 +273,14 @@ export function adaptAltClientEvent<T extends keyof alt.IClientEvent>(eventName:
         }
 
         case "weaponDamage": {
-            const params = { target: args[0], weaponHash: args[1], damage: args[2], offset: args[3], bodyPart: args[4], sourceEntity: args[5] };
+            const params = {
+                target: args[0],
+                weaponHash: args[1],
+                damage: args[2],
+                offset: args[3],
+                bodyPart: args[4],
+                sourceEntity: args[5],
+            };
             return params as AltClientEvent[T];
         }
 

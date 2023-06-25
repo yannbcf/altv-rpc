@@ -12,8 +12,24 @@ export type AltServerEvent = {
     netOwnerChange: { entity: alt.Entity; owner: alt.Player | null; oldOwner: alt.Player | null };
     playerChangedVehicleSeat: { player: alt.Player; vehicle: alt.Vehicle; oldSeat: number; seat: number };
     playerConnect: { player: alt.Player };
-    playerConnectDenied: { reason: alt.ConnectDeniedReason; name: string; ip: string; passwordHash: number; isDebug: boolean; branch: string; version: number; cdnURL: string; discordId: number };
-    playerDamage: { victim: alt.Player; attacker: alt.Entity | null; healthDamage: number; armourDamage: number; weaponHash: number };
+    playerConnectDenied: {
+        reason: alt.ConnectDeniedReason;
+        name: string;
+        ip: string;
+        passwordHash: number;
+        isDebug: boolean;
+        branch: string;
+        version: number;
+        cdnURL: string;
+        discordId: number;
+    };
+    playerDamage: {
+        victim: alt.Player;
+        attacker: alt.Entity | null;
+        healthDamage: number;
+        armourDamage: number;
+        weaponHash: number;
+    };
     playerDeath: { victim: alt.Player; killer: alt.Entity | null; weaponHash: number };
     playerDisconnect: { player: alt.Player; reason: string };
     playerEnteredVehicle: { player: alt.Player; vehicle: alt.Vehicle; seat: number };
@@ -30,17 +46,38 @@ export type AltServerEvent = {
     vehicleAttach: { vehicle: alt.Vehicle; attachedVehicle: alt.Vehicle };
     vehicleDestroy: { vehicle: alt.Vehicle };
     vehicleDetach: { vehicle: alt.Vehicle; detachedVehicle: alt.Vehicle };
-    weaponDamage: { source: alt.Player; target: alt.Entity; weaponHash: number; damage: number; offset: alt.Vector3; bodyPart: alt.BodyPart };
+    weaponDamage: {
+        source: alt.Player;
+        target: alt.Entity;
+        weaponHash: number;
+        damage: number;
+        offset: alt.Vector3;
+        bodyPart: alt.BodyPart;
+    };
     startFire: { player: alt.Player; fires: Array<alt.IFireInfo> };
     startProjectile: { player: alt.Player; pos: alt.Vector3; dir: alt.Vector3; ammoHash: number; weaponHash: number };
     playerWeaponChange: { player: alt.Player; oldWeapon: number; weapon: number };
-    vehicleDamage: { vehicle: alt.Vehicle; attacker: alt.Entity | null; bodyHealthDamage: number; additionalBodyHealthDamage: number; engineHealthDamage: number; petrolTankDamage: number; weapon: number };
+    vehicleDamage: {
+        vehicle: alt.Vehicle;
+        attacker: alt.Entity | null;
+        bodyHealthDamage: number;
+        additionalBodyHealthDamage: number;
+        engineHealthDamage: number;
+        petrolTankDamage: number;
+        weapon: number;
+    };
     localMetaChange: { player: alt.Player; key: string; newValue: AllowedAny; oldValue: AllowedAny };
     connectionQueueAdd: { connectionInfo: alt.IConnectionInfo };
     connectionQueueRemove: { connectionInfo: alt.IConnectionInfo };
     serverStarted: {};
     playerRequestControl: { player: alt.Player; target: alt.Entity };
-    playerAnimationChange: { target: alt.Player; oldAnimDict: number; newAnimDict: number; oldAnimName: number; newAnimName: number };
+    playerAnimationChange: {
+        target: alt.Player;
+        oldAnimDict: number;
+        newAnimDict: number;
+        oldAnimName: number;
+        newAnimName: number;
+    };
     playerInteriorChange: { player: alt.Player; oldInterior: number; newInterior: number };
     playerDimensionChange: { player: alt.Player; oldDimension: number; newDimension: number };
     vehicleHorn: { vehicle: alt.Vehicle; player: alt.Player; state: boolean };
@@ -52,7 +89,7 @@ export type AltServerEvent = {
 };
 
 export type ServerEvent = {
-    [K in keyof AltServerEvent]: AltServerEvent[K] & { removeEvent: () => void }
+    [K in keyof AltServerEvent]: AltServerEvent[K] & { removeEvent: () => void };
 };
 
 export function getAltServerEventKeys(): (keyof alt.IServerEvent)[] {
@@ -109,7 +146,10 @@ export function getAltServerEventKeys(): (keyof alt.IServerEvent)[] {
     return events as unknown as AssertObjectKeysInArray<typeof events, alt.IServerEvent, (keyof alt.IServerEvent)[]>;
 }
 
-export function adaptAltServerEvent<T extends keyof alt.IServerEvent>(eventName: T, ...args: Parameters<alt.IServerEvent[T]>) {
+export function adaptAltServerEvent<T extends keyof alt.IServerEvent>(
+    eventName: T,
+    ...args: Parameters<alt.IServerEvent[T]>
+) {
     switch (eventName) {
         case "anyResourceError":
         case "anyResourceStart":
@@ -150,7 +190,13 @@ export function adaptAltServerEvent<T extends keyof alt.IServerEvent>(eventName:
         }
 
         case "playerDamage": {
-            const params = { victim: args[0], attacker: args[1], healthDamage: args[2], armourDamage: args[3], weaponHash: args[4] };
+            const params = {
+                victim: args[0],
+                attacker: args[1],
+                healthDamage: args[2],
+                armourDamage: args[3],
+                weaponHash: args[4],
+            };
             return params as AltServerEvent[T];
         }
 
@@ -227,7 +273,14 @@ export function adaptAltServerEvent<T extends keyof alt.IServerEvent>(eventName:
         }
 
         case "weaponDamage": {
-            const params = { source: args[0], target: args[1], weaponHash: args[2], damage: args[3], offset: args[4], bodyPart: args[5] };
+            const params = {
+                source: args[0],
+                target: args[1],
+                weaponHash: args[2],
+                damage: args[3],
+                offset: args[4],
+                bodyPart: args[5],
+            };
             return params as AltServerEvent[T];
         }
 
@@ -247,7 +300,15 @@ export function adaptAltServerEvent<T extends keyof alt.IServerEvent>(eventName:
         }
 
         case "vehicleDamage": {
-            const params = { vehicle: args[0], attacker: args[1], bodyHealthDamage: args[2], additionalBodyHealthDamage: args[3], engineHealthDamage: args[4], petrolTankDamage: args[5], weapon: args[6] };
+            const params = {
+                vehicle: args[0],
+                attacker: args[1],
+                bodyHealthDamage: args[2],
+                additionalBodyHealthDamage: args[3],
+                engineHealthDamage: args[4],
+                petrolTankDamage: args[5],
+                weapon: args[6],
+            };
             return params as AltServerEvent[T];
         }
 
@@ -268,7 +329,13 @@ export function adaptAltServerEvent<T extends keyof alt.IServerEvent>(eventName:
         }
 
         case "playerAnimationChange": {
-            const params = { target: args[0], oldAnimDict: args[1], newAnimDict: args[2], oldAnimName: args[3], newAnimName: args[4] };
+            const params = {
+                target: args[0],
+                oldAnimDict: args[1],
+                newAnimDict: args[2],
+                oldAnimName: args[3],
+                newAnimName: args[4],
+            };
             return params as AltServerEvent[T];
         }
 

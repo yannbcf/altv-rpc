@@ -1,6 +1,6 @@
-import type { Bindings, RpcContract } from "./rpcs/createContract.ts";
+import type { Bindings } from "./rpcs/createContract.ts";
 import type { Binding, Bindable } from "./rpcs/bind.ts";
-import type { Envs } from "./types.ts";
+import type { Envs, RpcContract } from "./types.ts";
 
 import type * as altClient from "alt-client";
 import type * as altServer from "alt-server";
