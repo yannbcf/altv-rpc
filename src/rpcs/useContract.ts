@@ -1,8 +1,8 @@
 import { type AltServerFromRpc, type AgnosticFromRpc, buildFromRpcs } from "./fromRpcs.ts";
 import { type AltServerToRpc, type AgnosticToRpc, buildToRpcs } from "./toRpcs.ts";
-import { type Bindable, overrideBind } from "./bind.ts";
+import { type Bindable, type Binding, overrideBind } from "./bind.ts";
 
-import type { TypeCheckLevel, GetFlow } from "../types.ts";
+import type { StringLike, TypeCheckLevel, GetFlow } from "../types.ts";
 import type { CreateContract } from "./createContract.ts";
 
 import type * as altClient from "alt-client";
@@ -46,15 +46,16 @@ export function useContract<
 ) {
     const { __env } = overrideBind(bindable);
     const currentEnv = getCurrentEnvOverride(__env as string, opts.bindings);
-    const envBinding = overrideBind(currentEnv ?? bindable);
+    const envBinding = overrideBind(currentEnv ?? bindable) as Binding<Bindable>;
 
     // @ts-expect-error TODO(yann): fix type
-    const localBinding = overrideBind(opts.bindings.local ?? new EventsCluter());
+    const localBinding = overrideBind(opts.bindings.local ?? new EventsCluter()) as Binding<"local">;
+
+    const fromRpcs = buildFromRpcs(contract["namespaces"], envBinding, localBinding, opts);
 
     return {
-        from: <Namespace extends keyof T["namespaces"]>(namespace: Namespace) => {
-            // @ts-expect-error :))
-            return buildFromRpcs(contract["namespaces"][namespace], envBinding, localBinding, opts) as {
+        from: <Namespace extends StringLike<keyof T["namespaces"]>>(namespace: Namespace) => {
+            return fromRpcs[namespace] as {
                 // Putting that type as an external type caused type inference issues
                 [RpcName in keyof T["namespaces"][Namespace] as Env extends typeof altClient
                     ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends "client"

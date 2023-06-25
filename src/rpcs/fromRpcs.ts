@@ -74,8 +74,6 @@ function check<Env extends Bindable, WNames extends Readonly<string[]>, T extend
     const [from, to] = getRpcFlowInfos(rpc.flow);
     const { env, rpcName, binding } = rpcInfos;
 
-    console.log(env, rpcName);
-
     if (env === "webview") {
         // webview: not client->x | server->x
         if (!["client", "server"].includes(from)) {
@@ -191,8 +189,14 @@ function getRpcInfos<Env extends Bindable, WNames extends Readonly<string[]>, T 
     };
 }
 
-export function buildFromRpcs<Env extends Bindable, WNames extends Readonly<string[]>, T extends RpcContract<WNames>>(
-    rpcContract: T,
+export function buildFromRpcs<
+    Env extends Bindable,
+    WNames extends Readonly<string[]>,
+    T extends {
+        [namespace: string]: RpcContract<WNames>;
+    }
+>(
+    rpcNamespaces: T,
     envBinding: Binding<Bindable>,
     localBinding: Binding<"local">,
     opts: Env extends typeof altClient | typeof altServer
@@ -204,85 +208,89 @@ export function buildFromRpcs<Env extends Bindable, WNames extends Readonly<stri
               bindings: Bindings<WNames, Env>;
           }
 ) {
-    const blob: Partial<Record<string, AllowedAny>> = {
+    const blob: Partial<Record<string, Record<string, AllowedAny>>> = {
         ctx: {},
     };
 
-    for (const _rpcName in rpcContract) {
-        const rpc = rpcContract[_rpcName]!;
+    for (const namespace in rpcNamespaces) {
+        blob[namespace] = {};
 
-        const rpcInfos = getRpcInfos(rpc, _rpcName, envBinding, localBinding, opts);
-        const { env, isAltServerEnv, rpcName, binding } = rpcInfos;
+        for (const _rpcName in rpcNamespaces[namespace]) {
+            const rpc = rpcNamespaces[namespace]![_rpcName]!;
 
-        if (!check(rpc, rpcInfos, envBinding, opts)) {
-            continue;
-        }
+            const rpcInfos = getRpcInfos(rpc, _rpcName, envBinding, localBinding, opts);
+            const { env, isAltServerEnv, rpcName, binding } = rpcInfos;
 
-        const transformedRpcName = `on${upperCaseFirstLetter(_rpcName)}`;
-        blob[transformedRpcName] = (listener: Callback, opts?: { once?: true }) => {
-            const subscribe = opts?.once ? binding.once : binding.on;
-            subscribe.bind(binding)(rpcName, (...args: unknown[]) => {
-                const returnsParser = rpc.returns;
-                const argsParser = rpc.args;
+            if (!check(rpc, rpcInfos, envBinding, opts)) {
+                continue;
+            }
 
-                const [typedArgs, error]: [AllowedAny, AllowedAny] = argsParser
-                    ? (() => {
-                        const result = argsParser.safeParse(args[!isAltServerEnv ? 0 : 1]);
-                        return result.success ? [result.data, null] : [args, result.error];
-                    })()
-                    : [args[!isAltServerEnv ? 0 : 1] ?? {}, null];
+            const transformedRpcName = `on${upperCaseFirstLetter(_rpcName)}`;
+            blob[namespace]![transformedRpcName] = (listener: Callback, opts?: { once?: true }) => {
+                const subscribe = opts?.once ? binding.once : binding.on;
+                subscribe.bind(binding)(rpcName, (...args: unknown[]) => {
+                    const returnsParser = rpc.returns;
+                    const argsParser = rpc.args;
 
-                if (error !== null) {
-                    throw new Error(`[alt-rpc] The rpc <${rpcName}> args type checking issued: ${error.message}`);
-                }
-
-                if (
-                    returnsParser === undefined ||
-                    returnsParser instanceof z.ZodVoid ||
-                    returnsParser instanceof z.ZodUndefined
-                ) {
-                    if (!isAltServerEnv) listener({ env }, typedArgs);
-                    else {
-                        const player = args.shift() as altServer.Player;
-                        listener({ env, player }, typedArgs);
-                    }
-                } else {
-                    let hasReturned = false;
-
-                    const returnValue = (returnValue: typeof returnsParser) => {
-                        const [typedReturnValue, error]: [AllowedAny, Error | null] = (() => {
-                            const result = returnsParser.safeParse(returnValue);
+                    const [typedArgs, error]: [AllowedAny, AllowedAny] = argsParser
+                        ? (() => {
+                            const result = argsParser.safeParse(args[!isAltServerEnv ? 0 : 1]);
                             return result.success ? [result.data, null] : [args, result.error];
-                        })();
+                        })()
+                        : [args[!isAltServerEnv ? 0 : 1] ?? {}, null];
 
-                        if (error !== null) {
-                            throw new Error(
-                                `[alt-rpc] The rpc <${rpcName}> returns type checking issued: ${error.message}`
-                            );
-                        }
+                    if (error !== null) {
+                        throw new Error(`[alt-rpc] The rpc <${rpcName}> args type checking issued: ${error.message}`);
+                    }
 
-                        if (isAltServerEnv) {
-                            if (hasReturned) {
-                                throw new Error(`[alt-rpc] The rpc <${rpcName}> already returned a value.`);
-                            }
-
+                    if (
+                        returnsParser === undefined ||
+                        returnsParser instanceof z.ZodVoid ||
+                        returnsParser instanceof z.ZodUndefined
+                    ) {
+                        if (!isAltServerEnv) listener({ env }, typedArgs);
+                        else {
                             const player = args.shift() as altServer.Player;
-                            (binding as Binding<typeof altServer>).emit(player, `_${rpcName}`, typedReturnValue);
-                            hasReturned = true;
-                        } else {
-                            if (hasReturned) {
-                                throw new Error(`[alt-rpc] The rpc <${rpcName}> already returned a value.`);
+                            listener({ env, player }, typedArgs);
+                        }
+                    } else {
+                        let hasReturned = false;
+
+                        const returnValue = (returnValue: typeof returnsParser) => {
+                            const [typedReturnValue, error]: [AllowedAny, Error | null] = (() => {
+                                const result = returnsParser.safeParse(returnValue);
+                                return result.success ? [result.data, null] : [args, result.error];
+                            })();
+
+                            if (error !== null) {
+                                throw new Error(
+                                    `[alt-rpc] The rpc <${rpcName}> returns type checking issued: ${error.message}`
+                                );
                             }
 
-                            (binding as Binding<typeof altClient>).emit(`_${rpcName}`, typedReturnValue);
-                            hasReturned = true;
-                        }
-                    };
+                            if (isAltServerEnv) {
+                                if (hasReturned) {
+                                    throw new Error(`[alt-rpc] The rpc <${rpcName}> already returned a value.`);
+                                }
 
-                    listener({ env, returnValue }, typedArgs);
-                }
-            });
-        };
+                                const player = args.shift() as altServer.Player;
+                                (binding as Binding<typeof altServer>).emit(player, `_${rpcName}`, typedReturnValue);
+                                hasReturned = true;
+                            } else {
+                                if (hasReturned) {
+                                    throw new Error(`[alt-rpc] The rpc <${rpcName}> already returned a value.`);
+                                }
+
+                                (binding as Binding<typeof altClient>).emit(`_${rpcName}`, typedReturnValue);
+                                hasReturned = true;
+                            }
+                        };
+
+                        listener({ env, returnValue }, typedArgs);
+                    }
+                });
+            };
+        }
     }
 
     return blob;
