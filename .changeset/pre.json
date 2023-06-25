@@ -1,0 +1,10 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "@yannbcf/altv-rpc": "0.5.0"
+  },
+  "changesets": [
+    "cuddly-coats-end"
+  ]
+}
