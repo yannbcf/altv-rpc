@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import type { AllowedAny, StringLike, Envs, ArgsType, GetFlow } from "../types.ts";
-import type { CreateContract, RpcContract, Bindings } from "./createContract.ts";
-import type { overrideBind, Binding, Bindable } from "./bind.ts";
+import type { AllowedAny, Envs, ArgsType } from "../types.ts";
+import type { RpcContract, Bindings } from "./createContract.ts";
+import type { Binding, Bindable } from "./bind.ts";
 
 import type * as altClient from "alt-client";
 import type * as altServer from "alt-server";
 
-import { assert, getRpcFlowInfos } from "../utils.ts";
+import { assert, getRpcFlowInfos, getRpcInfos } from "../utils.ts";
 import { z } from "zod";
 
 type RpcResult<T> =
@@ -18,42 +18,6 @@ type RpcResult<T> =
     | {
           success: false;
       };
-
-// export type FilterToRpcKeys<
-//     T extends CreateContract,
-//     U extends { [K in keyof T]: ReturnType<typeof bind> } = { [K in keyof T]: ReturnType<typeof bind> },
-//     Namespace extends StringLike<keyof U> = StringLike<keyof U>
-// > = {
-//     [Key in keyof T[Namespace] as U[Namespace] extends altClient.WebView
-//         ? GetFlow<T[Namespace][Key]["flow"], "from"> extends "webview"
-//             ? GetFlow<T[Namespace][Key]["flow"], "to"> extends "client"
-//                 ? Key
-//                 : GetFlow<T[Namespace][Key]["flow"], "to"> extends "server"
-//                 ? // TODO(yann): once webview->server is supported, replace with Key
-//                   never
-//                 : never
-//             : never
-//         : U[Namespace] extends typeof altClient
-//         ? GetFlow<T[Namespace][Key]["flow"], "from"> extends "client"
-//             ? GetFlow<T[Namespace][Key]["flow"], "to"> extends "webview"
-//                 ? Key
-//                 : never
-//             : GetFlow<T[Namespace][Key]["flow"], "to"> extends "server"
-//             ? Key
-//             : never
-//         : U[Namespace] extends typeof altServer
-//         ? GetFlow<T[Namespace][Key]["flow"], "from"> extends "server"
-//             ? GetFlow<T[Namespace][Key]["flow"], "to"> extends "webview"
-//                 ? // TODO(yann): once server->webview is supported, replace with Key
-//                   never
-//                 : GetFlow<T[Namespace][Key]["flow"], "to"> extends "client"
-//                 ? Key
-//                 : never
-//             : never
-//         : T[Namespace][Key]["flow"] extends "local"
-//         ? Key
-//         : never]: T[Namespace][Key];
-// };
 
 export type AgnosticToRpc<W extends Readonly<string[]>, T extends RpcContract<W>[keyof RpcContract<W>]> = ArgsType<
     T["args"],
@@ -85,25 +49,60 @@ export type AltServerToRpc<
           ? ArgsType<T["returns"], void>
           : Promise<RpcResult<ArgsType<T["returns"], void>>>;
 
-function isRpcToValid(env: Envs, rpcFlow: string): boolean {
-    return true;
-    // if (rpcFlow === "local") return true;
+function check<Env extends Bindable, WNames extends Readonly<string[]>, T extends RpcContract<WNames>>(
+    rpc: T[keyof T],
+    env: Envs,
+    opts: Env extends typeof altClient | typeof altServer
+        ? {
+              bindings: Bindings<WNames, Env>;
+          }
+        : {
+              webviewName: WNames[number];
+              bindings: Bindings<WNames, Env>;
+          }
+): boolean {
+    if (rpc.flow === "local") {
+        return true;
+    }
 
-    // const [from, to] = getRpcFlowInfos(rpcFlow);
+    const [from, to] = getRpcFlowInfos(rpc.flow);
+    switch (env) {
+        case "webview": {
+            const webviewName = (opts as { webviewName?: string }).webviewName;
+            assert(webviewName !== undefined);
 
-    // if (to.startsWith("webview") && to.includes(":")) {
-    //     return true;
-    // }
+            // webview: not webview:name->x
+            if (from !== `webview:${webviewName}`) {
+                return false;
+            }
 
-    // if (!from.startsWith(env)) {
-    //     return false;
-    // }
+            // webview: webview:name->client | webview:name->server
+            return ["client", "server"].includes(to);
+        }
 
-    // if (env.startsWith("webview")) {
-    //     return ["client", "server"].includes(to);
-    // }
+        case "client": {
+            // client: not client->x
+            if (from !== "client") {
+                return false;
+            }
 
-    // return env === "client" ? to === "server" : to === "client";
+            // client: client->webview:x | client->server
+            return to.startsWith("webview") || to === "server";
+        }
+
+        case "server": {
+            // server: not server->x
+            if (from !== "server") {
+                return false;
+            }
+
+            // server: server->webview:x | server-client
+            return to.startsWith("webview") || to === "client";
+        }
+
+        default:
+            return false;
+    }
 }
 
 export function buildToRpcs<
@@ -132,30 +131,12 @@ export function buildToRpcs<
 
         for (const _rpcName in rpcNamespaces[namespace]) {
             const rpc = rpcNamespaces[namespace]![_rpcName]!;
-            const env = envBinding.__env!;
+            const rpcInfos = getRpcInfos(rpc, _rpcName, envBinding, localBinding, opts);
+            const { isAltServerEnv, rpcName, binding } = rpcInfos;
 
-            if (!isRpcToValid(env, rpc.flow)) continue;
-
-            const d = rpc.flow === "local" || env !== "server";
-            const binding =
-                env === "client" && rpc.flow.includes("webview")
-                    ? (() => {
-                        const webviewName = rpc.flow.split(":")[1];
-                        assert(webviewName !== undefined);
-
-                          // @ts-expect-error :))
-                        return opts.bindings[webviewName] as Binding<"local">;
-                    })()
-                    : rpc.flow !== "local"
-                        ? envBinding
-                        : localBinding;
-
-            const rpcName =
-                rpc.internalEventName !== undefined
-                    ? typeof rpc.internalEventName === "function"
-                        ? `${rpc.internalEventName(_rpcName)}`
-                        : `${rpc.internalEventName}`
-                    : _rpcName;
+            if (!check(rpc, rpcInfos.env, opts)) {
+                continue;
+            }
 
             blob[namespace]![_rpcName] = (...args: unknown[]) => {
                 if (
@@ -163,7 +144,7 @@ export function buildToRpcs<
                     rpc.returns instanceof z.ZodVoid ||
                     rpc.returns instanceof z.ZodUndefined
                 ) {
-                    if (d) (binding as Binding<typeof altClient>).emit(rpcName, ...args);
+                    if (!isAltServerEnv) (binding as Binding<typeof altClient>).emit(rpcName, ...args);
                     else {
                         const player = args.shift() as altServer.Player;
                         (binding as Binding<typeof altServer>).emit(player, rpcName, ...args);
@@ -180,14 +161,13 @@ export function buildToRpcs<
 
                     const callback = (...args: unknown[]) => {
                         clearTimeout(timeout);
-                        resolve({ success: true, data: args[d ? 0 : 1] });
+                        resolve({ success: true, data: args[!isAltServerEnv ? 0 : 1] });
                     };
 
                     binding.once(`_${rpcName}`, callback);
 
-                    if (d) {
-                        (binding as Binding<typeof altClient>).emit(rpcName, ...args);
-                    } else {
+                    if (!isAltServerEnv) (binding as Binding<typeof altClient>).emit(rpcName, ...args);
+                    else {
                         const player = args.shift() as altServer.Player;
                         (binding as Binding<typeof altServer>).emit(player, rpcName, ...args);
                     }
