@@ -9,8 +9,8 @@ export function assert(condition: unknown, message?: string): asserts condition 
     if (condition === false) throw new Error(message);
 }
 
-export function getRpcFlowInfos(flow: string) {
-    if (flow === "local") return ["local", "local"] as [Envs, Envs];
+export function getRpcFlowInfos(flow: string): [Envs, Envs] | ["local", "local"] {
+    if (flow === "local") return ["local", "local"];
 
     const [from, to] = flow.split("->");
     assert(from !== undefined && to !== undefined);
@@ -25,8 +25,10 @@ export function upperCaseFirstLetter(str: string): string {
 export function getRpcInfos<Env extends Bindable, WNames extends Readonly<string[]>, T extends RpcContract<[]>>(
     rpc: T[keyof T],
     _rpcName: string,
-    envBinding: Binding<Bindable>,
-    localBinding: Binding<"local">,
+    bindings: {
+        env: Binding<Bindable>;
+        local: Binding<"local">;
+    },
     opts: Env extends typeof altClient | typeof altServer
         ? {
               bindings: Bindings<WNames, Env>;
@@ -37,7 +39,7 @@ export function getRpcInfos<Env extends Bindable, WNames extends Readonly<string
           }
 ) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const env = envBinding.__env!;
+    const env = bindings.env.__env!;
     const isAltServerEnv = rpc.flow !== "local" && env === "server";
 
     const rpcName =
@@ -57,13 +59,14 @@ export function getRpcInfos<Env extends Bindable, WNames extends Readonly<string
                 assert(webviewName !== undefined);
 
                   // @ts-expect-error tkt
-                const webviewBinding = opts.bindings[webviewName];
+                const webviewBinding = opts.bindings[`webview:${webviewName}`];
                 assert(webviewBinding !== undefined, `[altv-rpc] The webview ${webviewName} is not registered.`);
-                return webviewBinding as Binding<"local">;
+
+                return webviewBinding;
             })()
             : rpc.flow !== "local"
-                ? envBinding
-                : localBinding;
+                ? bindings.env
+                : bindings.local;
 
     return {
         env,

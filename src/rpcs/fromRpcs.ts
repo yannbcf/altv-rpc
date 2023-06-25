@@ -111,7 +111,6 @@ function check<Env extends Bindable, WNames extends Readonly<string[]>, T extend
                 });
 
                 if (rpc.returns !== undefined) {
-                    console.log("client: should setup bridge event");
                     binding.on(`_${rpcName}`, (...args: unknown[]) => {
                         (envBinding as Binding<typeof altClient>).emit(`_${rpcName}`, ...args);
                     });
@@ -152,8 +151,10 @@ export function buildFromRpcs<
     }
 >(
     rpcNamespaces: T,
-    envBinding: Binding<Bindable>,
-    localBinding: Binding<"local">,
+    bindings: {
+        env: Binding<Bindable>;
+        local: Binding<"local">;
+    },
     opts: Env extends typeof altClient | typeof altServer
         ? {
               bindings: Bindings<WNames, Env>;
@@ -173,10 +174,10 @@ export function buildFromRpcs<
         for (const _rpcName in rpcNamespaces[namespace]) {
             const rpc = rpcNamespaces[namespace]![_rpcName]!;
 
-            const rpcInfos = getRpcInfos(rpc, _rpcName, envBinding, localBinding, opts);
+            const rpcInfos = getRpcInfos(rpc, _rpcName, bindings, opts);
             const { env, isAltServerEnv, rpcName, binding } = rpcInfos;
 
-            if (!check(rpc, rpcInfos, envBinding, opts)) {
+            if (!check(rpc, rpcInfos, bindings.env, opts)) {
                 continue;
             }
 

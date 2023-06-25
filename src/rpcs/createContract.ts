@@ -8,18 +8,18 @@ import { useContract } from "./useContract.ts";
 import { z } from "zod";
 
 type ExcludeEqual<T extends string> = T extends `${infer U}->${infer V}` ? (U extends V ? never : T) : never;
-type _Envs<W extends Readonly<string[]>> = Exclude<Envs | `webview:${W[number]}`, "webview" | "local">;
+type _Envs<W extends Readonly<string[]>> = Exclude<Envs | `webview:${W[number]}`, "webview">;
 
-export type CreateContract<W extends Readonly<string[]>> = {
-    webviewNames?: W;
+export type CreateContract<WName extends Readonly<string[]>> = {
+    webviewNames?: WName;
     namespaces: {
-        [namespace: string]: RpcContract<W>;
+        [namespace: string]: RpcContract<WName>;
     };
 };
 
-export type RpcContract<W extends Readonly<string[]>> = {
+export type RpcContract<WName extends Readonly<string[]>> = {
     [rpcName: string]: {
-        flow: ExcludeEqual<`${_Envs<W>}->${_Envs<W>}`> | "local";
+        flow: ExcludeEqual<`${_Envs<WName>}->${_Envs<WName>}`> | "local";
         internalEventName?: string | number | ((rpcName: string) => string | number);
         args?: z.AnyZodObject;
         returns?: z.ZodType<AllowedAny, AllowedAny>;
@@ -50,7 +50,7 @@ export type Bindings<W extends Readonly<string[]>, Env extends Bindable> = Env e
     ? { local?: _<Binding<"local">> }
     : Env extends typeof altClient
     ? // ? { local?: _<Binding<"local">>; client?: _<typeof import("alt-client")> }
-      { [K in W[number]]: altClient.WebView } & {
+      { [K in W[number] as `webview:${W[number]}`]: altClient.WebView } & {
           local?: _<Binding<"local">>;
           client?: _<typeof altClient>;
       }

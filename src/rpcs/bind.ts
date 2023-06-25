@@ -6,13 +6,7 @@ import type * as altServer from "alt-server";
 export type Bindable = altClient.WebView | typeof altClient | typeof altServer | Binding<"local">;
 
 export type Binding<T extends Bindable | "local"> = {
-    __env?: T extends altClient.WebView
-        ? "webview"
-        : T extends typeof altClient
-        ? "client"
-        : T extends typeof altServer
-        ? "server"
-        : "local";
+    __env?: Envs | "local";
 
     on: (eventName: string, listener: Callback) => void;
     once: (eventName: string, listener: Callback) => void;
@@ -23,6 +17,7 @@ export type Binding<T extends Bindable | "local"> = {
         : (eventName: string, ...args: AllowedAny[]) => void;
 };
 
+// TODO(yann): T extends altClient.WebView is a useless check
 export type BindingMap<T> = T extends altClient.WebView
     ? Binding<altClient.WebView>
     : T extends typeof altClient

@@ -46,13 +46,15 @@ export function useContract<
 ) {
     const { __env } = overrideBind(bindable);
     const currentEnv = getCurrentEnvOverride(__env as string, opts.bindings);
-    const envBinding = overrideBind(currentEnv ?? bindable) as Binding<Bindable>;
 
-    // @ts-expect-error TODO(yann): fix type
-    const localBinding = overrideBind(opts.bindings.local ?? new EventsCluter()) as Binding<"local">;
+    const bindings = {
+        env: overrideBind(currentEnv ?? bindable) as Binding<Bindable>,
+        // @ts-expect-error TODO(yann): fix type
+        local: overrideBind(opts.bindings.local ?? new EventsCluter()) as Binding<"local">,
+    };
 
-    const fromRpcs = buildFromRpcs(contract["namespaces"], envBinding, localBinding, opts);
-    const toRpcs = buildToRpcs(contract["namespaces"], envBinding, localBinding, opts);
+    const fromRpcs = buildFromRpcs(contract["namespaces"], bindings, opts);
+    const toRpcs = buildToRpcs(contract["namespaces"], bindings, opts);
 
     return {
         from: <Namespace extends StringLike<keyof T["namespaces"]>>(namespace: Namespace) => {

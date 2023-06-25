@@ -51,7 +51,7 @@ export type AltServerToRpc<
 
 function check<Env extends Bindable, WNames extends Readonly<string[]>, T extends RpcContract<WNames>>(
     rpc: T[keyof T],
-    env: Envs,
+    env: Envs | "local",
     opts: Env extends typeof altClient | typeof altServer
         ? {
               bindings: Bindings<WNames, Env>;
@@ -113,8 +113,10 @@ export function buildToRpcs<
     }
 >(
     rpcNamespaces: T,
-    envBinding: Binding<Bindable>,
-    localBinding: Binding<"local">,
+    bindings: {
+        env: Binding<Bindable>;
+        local: Binding<"local">;
+    },
     opts: Env extends typeof altClient | typeof altServer
         ? {
               bindings: Bindings<WNames, Env>;
@@ -131,7 +133,7 @@ export function buildToRpcs<
 
         for (const _rpcName in rpcNamespaces[namespace]) {
             const rpc = rpcNamespaces[namespace]![_rpcName]!;
-            const rpcInfos = getRpcInfos(rpc, _rpcName, envBinding, localBinding, opts);
+            const rpcInfos = getRpcInfos(rpc, _rpcName, bindings, opts);
             const { isAltServerEnv, rpcName, binding } = rpcInfos;
 
             if (!check(rpc, rpcInfos.env, opts)) {
