@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import type { AllowedAny, StringLike, Envs, ArgsType, GetFlow } from "../types.ts";
-import type { CreateContract, RpcContract } from "./createContract.ts";
+import type { CreateContract, RpcContract, Bindings } from "./createContract.ts";
 import type { overrideBind, Binding, Bindable } from "./bind.ts";
 
 import type * as altClient from "alt-client";
@@ -86,97 +86,115 @@ export type AltServerToRpc<
           : Promise<RpcResult<ArgsType<T["returns"], void>>>;
 
 function isRpcToValid(env: Envs, rpcFlow: string): boolean {
-    if (rpcFlow === "local") return true;
+    return true;
+    // if (rpcFlow === "local") return true;
 
-    const [from, to] = getRpcFlowInfos(rpcFlow);
+    // const [from, to] = getRpcFlowInfos(rpcFlow);
 
-    if (to.startsWith("webview") && to.includes(":")) {
-        return true;
-    }
+    // if (to.startsWith("webview") && to.includes(":")) {
+    //     return true;
+    // }
 
-    if (!from.startsWith(env)) {
-        return false;
-    }
+    // if (!from.startsWith(env)) {
+    //     return false;
+    // }
 
-    if (env.startsWith("webview")) {
-        return ["client", "server"].includes(to);
-    }
+    // if (env.startsWith("webview")) {
+    //     return ["client", "server"].includes(to);
+    // }
 
-    return env === "client" ? to === "server" : to === "client";
+    // return env === "client" ? to === "server" : to === "client";
 }
 
-export function buildToRpcs<W extends Readonly<string[]>, T extends RpcContract<W>>(
-    rpcContract: T,
+export function buildToRpcs<
+    Env extends Bindable,
+    WNames extends Readonly<string[]>,
+    T extends {
+        [namespace: string]: RpcContract<WNames>;
+    }
+>(
+    rpcNamespaces: T,
     envBinding: Binding<Bindable>,
     localBinding: Binding<"local">,
-    bindings: Binding<Bindable>
+    opts: Env extends typeof altClient | typeof altServer
+        ? {
+              bindings: Bindings<WNames, Env>;
+          }
+        : {
+              webviewName: WNames[number];
+              bindings: Bindings<WNames, Env>;
+          }
 ) {
-    const rpcs: Partial<Record<string, AllowedAny>> = {};
+    const blob: Partial<Record<string, Record<string, AllowedAny>>> = {};
 
-    for (const _rpcName in rpcContract) {
-        const rpc = rpcContract[_rpcName]!;
-        const env = envBinding.__env!;
+    for (const namespace in rpcNamespaces) {
+        blob[namespace] = {};
 
-        if (!isRpcToValid(env, rpc.flow)) continue;
+        for (const _rpcName in rpcNamespaces[namespace]) {
+            const rpc = rpcNamespaces[namespace]![_rpcName]!;
+            const env = envBinding.__env!;
 
-        const d = rpc.flow === "local" || env !== "server";
-        const binding =
-            env === "client" && rpc.flow.includes("webview")
-                ? (() => {
-                    const webviewName = rpc.flow.split(":")[1];
-                    assert(webviewName !== undefined);
+            if (!isRpcToValid(env, rpc.flow)) continue;
 
-                      // @ts-expect-error tkt
-                    return bindings[webviewName] as Binding<"local">;
-                })()
-                : rpc.flow !== "local"
-                    ? envBinding
-                    : localBinding;
+            const d = rpc.flow === "local" || env !== "server";
+            const binding =
+                env === "client" && rpc.flow.includes("webview")
+                    ? (() => {
+                        const webviewName = rpc.flow.split(":")[1];
+                        assert(webviewName !== undefined);
 
-        const rpcName =
-            rpc.internalEventName !== undefined
-                ? typeof rpc.internalEventName === "function"
-                    ? `${rpc.internalEventName(_rpcName)}`
-                    : `${rpc.internalEventName}`
-                : _rpcName;
+                          // @ts-expect-error :))
+                        return opts.bindings[webviewName] as Binding<"local">;
+                    })()
+                    : rpc.flow !== "local"
+                        ? envBinding
+                        : localBinding;
 
-        rpcs[_rpcName] = (...args: unknown[]) => {
-            if (
-                rpc.returns === undefined ||
-                rpc.returns instanceof z.ZodVoid ||
-                rpc.returns instanceof z.ZodUndefined
-            ) {
-                if (d) (binding as Binding<typeof altClient>).emit(rpcName, ...args);
-                else {
-                    const player = args.shift() as altServer.Player;
-                    (binding as Binding<typeof altServer>).emit(player, rpcName, ...args);
+            const rpcName =
+                rpc.internalEventName !== undefined
+                    ? typeof rpc.internalEventName === "function"
+                        ? `${rpc.internalEventName(_rpcName)}`
+                        : `${rpc.internalEventName}`
+                    : _rpcName;
+
+            blob[namespace]![_rpcName] = (...args: unknown[]) => {
+                if (
+                    rpc.returns === undefined ||
+                    rpc.returns instanceof z.ZodVoid ||
+                    rpc.returns instanceof z.ZodUndefined
+                ) {
+                    if (d) (binding as Binding<typeof altClient>).emit(rpcName, ...args);
+                    else {
+                        const player = args.shift() as altServer.Player;
+                        (binding as Binding<typeof altServer>).emit(player, rpcName, ...args);
+                    }
+
+                    return;
                 }
 
-                return;
-            }
+                return new Promise((resolve) => {
+                    const timeout = setTimeout(() => {
+                        binding.off(rpcName, callback);
+                        resolve({ success: false });
+                    }, 2000);
 
-            return new Promise((resolve) => {
-                const timeout = setTimeout(() => {
-                    binding.off(rpcName, callback);
-                    resolve({ success: false });
-                }, 2000);
+                    const callback = (...args: unknown[]) => {
+                        clearTimeout(timeout);
+                        resolve({ success: true, data: args[d ? 0 : 1] });
+                    };
 
-                const callback = (...args: unknown[]) => {
-                    clearTimeout(timeout);
-                    resolve({ success: true, data: args[d ? 0 : 1] });
-                };
+                    binding.once(`_${rpcName}`, callback);
 
-                binding.once(`_${rpcName}`, callback);
-
-                if (d) {
-                    (binding as Binding<typeof altClient>).emit(rpcName, ...args);
-                } else {
-                    const player = args.shift() as altServer.Player;
-                    (binding as Binding<typeof altServer>).emit(player, rpcName, ...args);
-                }
-            });
-        };
+                    if (d) {
+                        (binding as Binding<typeof altClient>).emit(rpcName, ...args);
+                    } else {
+                        const player = args.shift() as altServer.Player;
+                        (binding as Binding<typeof altServer>).emit(player, rpcName, ...args);
+                    }
+                });
+            };
+        }
     }
 
-    return rpcs;
+    return blob;
 }
