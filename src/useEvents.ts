@@ -44,8 +44,8 @@ function subscribeAltEvent<Alt extends typeof altClient | typeof altServer>(
 
     const internalListener = (...args: unknown[]) => {
         const params: { removeEvent?: typeof removeEvent } = alt.isClient
-            ? adaptAltClientEvent(eventName as ClientKeys, ...args as Parameters<altClient.IClientEvent[ClientKeys]>)
-            : adaptAltServerEvent(eventName as ServerKeys, ...args as Parameters<altServer.IServerEvent[ServerKeys]>);
+            ? adaptAltClientEvent(eventName as ClientKeys, ...(args as Parameters<altClient.IClientEvent[ClientKeys]>))
+            : adaptAltServerEvent(eventName as ServerKeys, ...(args as Parameters<altServer.IServerEvent[ServerKeys]>));
 
         const removeEvent = () => {
             const internalListeners = internalMapping.get(eventName)?.get(listener);
@@ -102,7 +102,10 @@ function generate<Alt extends typeof altClient | typeof altServer>(
 
 export function useEvents<Alt extends typeof altClient | typeof altServer>(alt: Alt) {
     if (typeof window !== "undefined") {
-        throw new Error("[altv-rpc] You attempted to call a method reserved in the alt-client and alt-server environements in the browser");
+        throw new Error(
+            // eslint-disable-next-line max-len
+            "[altv-rpc] You attempted to call a method reserved in the alt-client and alt-server environements in the browser"
+        );
     }
 
     type U = Alt extends typeof altClient ? AltClientEvent : AltServerEvent;
@@ -125,7 +128,7 @@ export function useEvents<Alt extends typeof altClient | typeof altServer>(alt: 
             const internalListeners = internalMapping.get(eventName)?.get(listener);
             if (internalListeners == null) return false;
 
-            return Boolean(internalListeners.find(internalListener => internalListener === listener));
+            return Boolean(internalListeners.find((internalListener) => internalListener === listener));
         },
         remove: (eventName: EventName, listener: (args: U[EventName]) => void): boolean => {
             const internalListeners = internalMapping.get(eventName)?.get(listener);
@@ -147,9 +150,5 @@ export function useEvents<Alt extends typeof altClient | typeof altServer>(alt: 
             return size > eventListeners.length;
         },
         ...generate(alt, internalMapping),
-    } as Events<
-        Alt extends typeof altClient
-        ? AltClientEvent
-        : AltServerEvent
-    >;
+    } as Events<Alt extends typeof altClient ? AltClientEvent : AltServerEvent>;
 }

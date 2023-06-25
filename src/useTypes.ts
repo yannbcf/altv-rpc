@@ -101,19 +101,16 @@ function buildServerTypes(alt: typeof altServer) {
     };
 }
 
-export function useTypes<
-    Alt extends typeof altClient | typeof altServer
->(alt: Alt): Alt extends typeof altClient
-    ? ReturnType<typeof buildClientTypes>
-    : ReturnType<typeof buildServerTypes>
-{
+export function useTypes<Alt extends typeof altClient | typeof altServer>(
+    alt: Alt
+): Alt extends typeof altClient ? ReturnType<typeof buildClientTypes> : ReturnType<typeof buildServerTypes> {
     if (typeof window !== "undefined") {
-        throw new Error("[altv-rpc] You attempted to call a method reserved in the alt-client and alt-server environements in the browser");
+        throw new Error(
+            // eslint-disable-next-line max-len
+            "[altv-rpc] You attempted to call a method reserved in the alt-client and alt-server environements in the browser"
+        );
     }
 
-
     // @ts-expect-error typescript server cannot know that alt.isClient infers altClient
-    return alt.isClient
-        ? buildClientTypes(alt as typeof altClient)
-        : buildServerTypes(alt as typeof altServer);
+    return alt.isClient ? buildClientTypes(alt as typeof altClient) : buildServerTypes(alt as typeof altServer);
 }

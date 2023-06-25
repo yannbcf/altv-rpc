@@ -5,4 +5,3 @@ export { useEvents, ClientEvent, ServerEvent } from "./useEvents.ts";
 export { useTypes } from "./useTypes.ts";
 
 export { EventsCluter } from "./eventsCluter.ts";
-export * as contract from "./exports.ts";
