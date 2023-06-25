@@ -10,10 +10,12 @@ import type * as altServer from "alt-server";
 import { assert, getRpcFlowInfos, getRpcInfos, upperCaseFirstLetter } from "../utils.ts";
 import { z } from "zod";
 
-export type AgnosticFromRpc<W extends Readonly<string[]>, T extends RpcContract<W>[keyof RpcContract<W>]> = ArgsType<
-    T["args"],
-    undefined
-> extends undefined
+type _void = void | Promise<void>;
+
+export type AgnosticFromRpc<
+    WName extends Readonly<string[]>,
+    T extends RpcContract<WName>[keyof RpcContract<WName>]
+> = ArgsType<T["args"], undefined> extends undefined
     ? ArgsType<T["returns"], undefined> extends undefined
         ? (ctx: { removeRpc: () => void }, args: {}) => _void
         : (
@@ -27,29 +29,27 @@ export type AgnosticFromRpc<W extends Readonly<string[]>, T extends RpcContract<
           args: ArgsType<T["args"], undefined>
       ) => _void;
 
-type _void = undefined | void;
-
-export type AltServerFromRpc<W extends Readonly<string[]>, T extends RpcContract<W>[keyof RpcContract<W>]> = ArgsType<
-    T["args"],
-    undefined
-> extends undefined
+export type AltServerFromRpc<
+    WName extends Readonly<string[]>,
+    T extends RpcContract<WName>[keyof RpcContract<WName>]
+> = ArgsType<T["args"], undefined> extends undefined
     ? ArgsType<T["returns"], undefined> extends undefined
-        ? (ctx: { player: altServer.Player; removeRpc: () => void }, args: {}) => _void
+        ? (ctx: { player: altServer.Player /* removeRpc: () => void */ }, args: {}) => _void
         : (
               ctx: {
                   player: altServer.Player;
                   returnValue: (returnValue: ArgsType<T["returns"], void>) => void;
-                  removeRpc: () => void;
+                  // removeRpc: () => void;
               },
               args: {}
           ) => _void
     : ArgsType<T["returns"], undefined> extends undefined
-    ? (ctx: { player: altServer.Player; removeRpc: () => void }, args: ArgsType<T["args"], undefined>) => _void
+    ? (ctx: { player: altServer.Player /* removeRpc: () => void */ }, args: ArgsType<T["args"], undefined>) => _void
     : (
           ctx: {
               player: altServer.Player;
               returnValue: (returnValue: ArgsType<T["returns"], void>) => void;
-              removeRpc: () => void;
+              // removeRpc: () => void;
           },
           args: ArgsType<T["args"], undefined>
       ) => _void;
@@ -175,25 +175,33 @@ export function buildFromRpcs<
             const rpc = rpcNamespaces[namespace]![_rpcName]!;
 
             const rpcInfos = getRpcInfos(rpc, _rpcName, bindings, opts);
-            const { env, isAltServerEnv, rpcName, binding } = rpcInfos;
+            const { isAltServerEnv, rpcName, binding } = rpcInfos;
 
             if (!check(rpc, rpcInfos, bindings.env, opts)) {
                 continue;
             }
 
             const transformedRpcName = `on${upperCaseFirstLetter(_rpcName)}`;
+            const stack = new Map<string, boolean>();
+
             blob[namespace]![transformedRpcName] = (listener: Callback, opts?: { once?: true }) => {
                 const subscribe = opts?.once ? binding.once : binding.on;
                 subscribe.bind(binding)(rpcName, (...args: unknown[]) => {
                     const returnsParser = rpc.returns;
                     const argsParser = rpc.args;
+                    const ctx: Record<string, AllowedAny> = {};
 
+                    if (isAltServerEnv) {
+                        ctx["player"] = args.shift() as altServer.Player;
+                    }
+
+                    const rpcTimestamp = `${rpcName}_${args.shift()}`;
                     const [typedArgs, error]: [AllowedAny, AllowedAny] = argsParser
                         ? (() => {
-                            const result = argsParser.safeParse(args[!isAltServerEnv ? 0 : 1]);
+                            const result = argsParser.safeParse(args);
                             return result.success ? [result.data, null] : [args, result.error];
                         })()
-                        : [args[!isAltServerEnv ? 0 : 1] ?? {}, null];
+                        : [args ?? {}, null];
 
                     if (error !== null) {
                         throw new Error(`[alt-rpc] The rpc <${rpcName}> args type checking issued: ${error.message}`);
@@ -204,46 +212,36 @@ export function buildFromRpcs<
                         returnsParser instanceof z.ZodVoid ||
                         returnsParser instanceof z.ZodUndefined
                     ) {
-                        if (!isAltServerEnv) listener({ env }, typedArgs);
-                        else {
-                            const player = args.shift() as altServer.Player;
-                            listener({ env, player }, typedArgs);
-                        }
-                    } else {
-                        let hasReturned = false;
-
-                        const returnValue = (returnValue: typeof returnsParser) => {
-                            const [typedReturnValue, error]: [AllowedAny, Error | null] = (() => {
-                                const result = returnsParser.safeParse(returnValue);
-                                return result.success ? [result.data, null] : [args, result.error];
-                            })();
-
-                            if (error !== null) {
-                                throw new Error(
-                                    `[alt-rpc] The rpc <${rpcName}> returns type checking issued: ${error.message}`
-                                );
-                            }
-
-                            if (isAltServerEnv) {
-                                if (hasReturned) {
-                                    throw new Error(`[alt-rpc] The rpc <${rpcName}> already returned a value.`);
-                                }
-
-                                const player = args.shift() as altServer.Player;
-                                (binding as Binding<typeof altServer>).emit(player, `_${rpcName}`, typedReturnValue);
-                                hasReturned = true;
-                            } else {
-                                if (hasReturned) {
-                                    throw new Error(`[alt-rpc] The rpc <${rpcName}> already returned a value.`);
-                                }
-
-                                (binding as Binding<typeof altClient>).emit(`_${rpcName}`, typedReturnValue);
-                                hasReturned = true;
-                            }
-                        };
-
-                        listener({ env, returnValue }, typedArgs);
+                        listener(ctx, typedArgs);
+                        return;
                     }
+
+                    ctx["returnValue"] = (rValue: typeof returnsParser) => {
+                        const hasReturned = stack.get(rpcTimestamp) ?? false;
+                        if (hasReturned) {
+                            throw new Error(`[alt-rpc] The rpc <${rpcName}> already returned a value.`);
+                        }
+
+                        stack.set(rpcTimestamp, true);
+                        setTimeout(() => {
+                            stack.delete(rpcTimestamp);
+                        }, 5000);
+
+                        const typedRValue = returnsParser.safeParse(rValue);
+                        if (!typedRValue.success) {
+                            throw new Error(
+                                `[alt-rpc] The rpc <${rpcName}> returns type checking issued: ${typedRValue.error.message}`
+                            );
+                        }
+
+                        if (isAltServerEnv) {
+                            (binding as Binding<typeof altServer>).emit(ctx["player"], `_${rpcName}`, typedRValue.data);
+                        } else {
+                            (binding as Binding<typeof altClient>).emit(`_${rpcName}`, typedRValue.data);
+                        }
+                    };
+
+                    listener(ctx, typedArgs);
                 });
             };
         }

@@ -19,10 +19,10 @@ type RpcResult<T> =
           success: false;
       };
 
-export type AgnosticToRpc<W extends Readonly<string[]>, T extends RpcContract<W>[keyof RpcContract<W>]> = ArgsType<
-    T["args"],
-    undefined
-> extends undefined
+export type AgnosticToRpc<
+    WName extends Readonly<string[]>,
+    T extends RpcContract<WName>[keyof RpcContract<WName>]
+> = ArgsType<T["args"], undefined> extends undefined
     ? () => ArgsType<T["returns"], undefined> extends undefined
           ? ArgsType<T["returns"], void>
           : Promise<RpcResult<ArgsType<T["returns"], void>>>
@@ -33,17 +33,16 @@ export type AgnosticToRpc<W extends Readonly<string[]>, T extends RpcContract<W>
           : Promise<RpcResult<ArgsType<T["returns"], void>>>;
 
 export type AltServerToRpc<
-    W extends Readonly<string[]>,
-    T extends RpcContract<W>[keyof RpcContract<W>],
-    Player = altServer.Player
+    WName extends Readonly<string[]>,
+    T extends RpcContract<WName>[keyof RpcContract<WName>]
 > = ArgsType<T["args"], undefined> extends undefined
     ? (
-          player: Player
+          player: altServer.Player
       ) => ArgsType<T["returns"], undefined> extends undefined
           ? ArgsType<T["returns"], void>
           : Promise<RpcResult<ArgsType<T["returns"], void>>>
     : (
-          player: Player,
+          player: altServer.Player,
           args: ArgsType<T["args"], undefined>
       ) => ArgsType<T["returns"], undefined> extends undefined
           ? ArgsType<T["returns"], void>
@@ -141,15 +140,17 @@ export function buildToRpcs<
             }
 
             blob[namespace]![_rpcName] = (...args: unknown[]) => {
+                const t = Date.now();
+
                 if (
                     rpc.returns === undefined ||
                     rpc.returns instanceof z.ZodVoid ||
                     rpc.returns instanceof z.ZodUndefined
                 ) {
-                    if (!isAltServerEnv) (binding as Binding<typeof altClient>).emit(rpcName, ...args);
+                    if (!isAltServerEnv) (binding as Binding<typeof altClient>).emit(rpcName, t, ...args);
                     else {
                         const player = args.shift() as altServer.Player;
-                        (binding as Binding<typeof altServer>).emit(player, rpcName, ...args);
+                        (binding as Binding<typeof altServer>).emit(player, rpcName, t, ...args);
                     }
 
                     return;
@@ -168,10 +169,10 @@ export function buildToRpcs<
 
                     binding.once(`_${rpcName}`, callback);
 
-                    if (!isAltServerEnv) (binding as Binding<typeof altClient>).emit(rpcName, ...args);
+                    if (!isAltServerEnv) (binding as Binding<typeof altClient>).emit(rpcName, t, ...args);
                     else {
                         const player = args.shift() as altServer.Player;
-                        (binding as Binding<typeof altServer>).emit(player, rpcName, ...args);
+                        (binding as Binding<typeof altServer>).emit(player, rpcName, t, ...args);
                     }
                 });
             };

@@ -46,11 +46,10 @@ export function createContract<WNames extends Readonly<string[]>, Contract exten
 
 type _<T extends Bindable> = Partial<Omit<Binding<T>, "__env">>;
 
-export type Bindings<W extends Readonly<string[]>, Env extends Bindable> = Env extends altClient.WebView
+export type Bindings<WName extends Readonly<string[]>, Env extends Bindable> = Env extends altClient.WebView
     ? { local?: _<Binding<"local">> }
     : Env extends typeof altClient
-    ? // ? { local?: _<Binding<"local">>; client?: _<typeof import("alt-client")> }
-      { [K in W[number] as `webview:${W[number]}`]: altClient.WebView } & {
+    ? { [K in WName[number] as `webview:${WName[number]}`]: altClient.WebView } & {
           local?: _<Binding<"local">>;
           client?: _<typeof altClient>;
       }
