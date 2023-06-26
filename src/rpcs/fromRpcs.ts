@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import type { AllowedAny, Callback, RpcContract, ArgsType } from "../types.ts";
-import type { Bindings } from "./createContract.ts";
+import type { AllowedAny, Callback, RpcContract, ArgsType, GetFlow } from "../types.ts";
+import type { CreateContract, Bindings } from "./createContract.ts";
 import type { Binding, Bindable } from "./bind.ts";
 
 import type * as altClient from "alt-client";
@@ -17,42 +17,81 @@ export type AgnosticFromRpc<
     T extends RpcContract<WName>[keyof RpcContract<WName>]
 > = ArgsType<T["args"], undefined> extends undefined
     ? ArgsType<T["returns"], undefined> extends undefined
-        ? (ctx: { removeRpc: () => void }, args: {}) => _void
-        : (
-              ctx: { returnValue: (returnValue: ArgsType<T["returns"], void>) => void; removeRpc: () => void },
-              args: {}
-          ) => _void
+        ? (ctx: {
+              /* removeRpc: () => void */
+              args: {};
+          }) => _void
+        : (ctx: {
+              returnValue: (returnValue: ArgsType<T["returns"], void>) => void /* removeRpc: () => void */;
+              args: {};
+          }) => _void
     : ArgsType<T["returns"], undefined> extends undefined
-    ? (ctx: { removeRpc: () => void }, args: ArgsType<T["args"], undefined>) => _void
-    : (
-          ctx: { returnValue: (returnValue: ArgsType<T["returns"], void>) => void; removeRpc: () => void },
-          args: ArgsType<T["args"], undefined>
-      ) => _void;
+    ? (ctx: {
+          /* removeRpc: () => void */
+          args: ArgsType<T["args"], undefined>;
+      }) => _void
+    : (ctx: {
+          returnValue: (returnValue: ArgsType<T["returns"], void>) => void /* removeRpc: () => void */;
+          args: ArgsType<T["args"], undefined>;
+      }) => _void;
 
 export type AltServerFromRpc<
     WName extends Readonly<string[]>,
     T extends RpcContract<WName>[keyof RpcContract<WName>]
 > = ArgsType<T["args"], undefined> extends undefined
     ? ArgsType<T["returns"], undefined> extends undefined
-        ? (ctx: { player: altServer.Player /* removeRpc: () => void */ }, args: {}) => _void
-        : (
-              ctx: {
-                  player: altServer.Player;
-                  returnValue: (returnValue: ArgsType<T["returns"], void>) => void;
-                  // removeRpc: () => void;
-              },
-              args: {}
-          ) => _void
-    : ArgsType<T["returns"], undefined> extends undefined
-    ? (ctx: { player: altServer.Player /* removeRpc: () => void */ }, args: ArgsType<T["args"], undefined>) => _void
-    : (
-          ctx: {
+        ? (ctx: { player: altServer.Player /* removeRpc: () => void */; args: {} }) => _void
+        : (ctx: {
               player: altServer.Player;
               returnValue: (returnValue: ArgsType<T["returns"], void>) => void;
               // removeRpc: () => void;
-          },
-          args: ArgsType<T["args"], undefined>
-      ) => _void;
+              args: {};
+          }) => _void
+    : ArgsType<T["returns"], undefined> extends undefined
+    ? (ctx: { player: altServer.Player /* removeRpc: () => void */; args: ArgsType<T["args"], undefined> }) => _void
+    : (ctx: {
+          player: altServer.Player;
+          returnValue: (returnValue: ArgsType<T["returns"], void>) => void;
+          // removeRpc: () => void;
+          args: ArgsType<T["args"], undefined>;
+      }) => _void;
+
+export type FromRpc<
+    WNames extends Readonly<string[]>,
+    WName extends WNames[number],
+    T extends CreateContract<WNames>,
+    Env extends Bindable,
+    Namespace extends keyof T["namespaces"]
+> = {
+    [RpcName in keyof T["namespaces"][Namespace] as Env extends typeof altClient
+        ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends "client"
+            ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends `webview:${WNames[number]}`
+                ? `on${Capitalize<RpcName & string>}`
+                : GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends "server"
+                ? `on${Capitalize<RpcName & string>}`
+                : never
+            : never
+        : Env extends typeof altServer
+        ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends "server"
+            ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends "client"
+                ? `on${Capitalize<RpcName & string>}`
+                : GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends `webview:${WNames[number]}`
+                ? `on${Capitalize<RpcName & string>}`
+                : never
+            : never
+        : T["namespaces"][Namespace][RpcName]["flow"] extends "local"
+        ? `on${Capitalize<RpcName & string>}`
+        : GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends `webview:${WName}`
+        ? `on${Capitalize<RpcName & string>}`
+        : never]: (
+        listener: Env extends typeof import("alt-server")
+            ? T["namespaces"][Namespace][RpcName]["flow"] extends "local"
+                ? AgnosticFromRpc<WNames, T["namespaces"][Namespace][RpcName]>
+                : AltServerFromRpc<WNames, T["namespaces"][Namespace][RpcName]>
+            : AgnosticFromRpc<WNames, T["namespaces"][Namespace][RpcName]>
+        // opts?: { once?: true; typeCheckLevel?: TypeCheckLevel }
+    ) => void;
+};
 
 function check<Env extends Bindable, WNames extends Readonly<string[]>, T extends RpcContract<WNames>>(
     rpc: T[keyof T],
@@ -186,25 +225,26 @@ export function buildFromRpcs<
 
             blob[namespace]![transformedRpcName] = (listener: Callback, opts?: { once?: true }) => {
                 const subscribe = opts?.once ? binding.once : binding.on;
-                subscribe.bind(binding)(rpcName, (...args: unknown[]) => {
-                    const returnsParser = rpc.returns;
-                    const argsParser = rpc.args;
-                    const ctx: Record<string, AllowedAny> = {};
+                const returnsParser = rpc.returns;
+                const argsParser = rpc.args;
 
+                subscribe.bind(binding)(rpcName, (...args: unknown[]) => {
+                    const rpcTimestamp = `${rpcName}_${args.shift()}`;
+                    const ctx: Record<string, AllowedAny> = {};
                     if (isAltServerEnv) {
                         ctx["player"] = args.shift() as altServer.Player;
                     }
 
-                    const rpcTimestamp = `${rpcName}_${args.shift()}`;
-                    const [typedArgs, error]: [AllowedAny, AllowedAny] = argsParser
-                        ? (() => {
-                            const result = argsParser.safeParse(args);
-                            return result.success ? [result.data, null] : [args, result.error];
-                        })()
-                        : [args ?? {}, null];
+                    if (!argsParser) ctx["args"] = args;
+                    else {
+                        const typedArgs = argsParser.safeParse(args);
+                        if (!typedArgs.success) {
+                            throw new Error(
+                                `[alt-rpc] The rpc <${rpcName}> args type checking issued: ${typedArgs.error.message}`
+                            );
+                        }
 
-                    if (error !== null) {
-                        throw new Error(`[alt-rpc] The rpc <${rpcName}> args type checking issued: ${error.message}`);
+                        ctx["args"] = typedArgs.data;
                     }
 
                     if (
@@ -212,7 +252,7 @@ export function buildFromRpcs<
                         returnsParser instanceof z.ZodVoid ||
                         returnsParser instanceof z.ZodUndefined
                     ) {
-                        listener(ctx, typedArgs);
+                        listener(ctx);
                         return;
                     }
 
@@ -241,7 +281,7 @@ export function buildFromRpcs<
                         }
                     };
 
-                    listener(ctx, typedArgs);
+                    listener(ctx);
                 });
             };
         }

@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import type { AllowedAny, Envs, RpcContract, ArgsType } from "../types.ts";
-import type { Bindings } from "./createContract.ts";
+import type { AllowedAny, Envs, RpcContract, ArgsType, GetFlow } from "../types.ts";
+import type { Bindings, CreateContract } from "./createContract.ts";
 import type { Binding, Bindable } from "./bind.ts";
 
 import type * as altClient from "alt-client";
 import type * as altServer from "alt-server";
 
-import { assert, getRpcFlowInfos, getRpcInfos } from "../utils.ts";
+import { assert, upperCaseFirstLetter, getRpcFlowInfos, getRpcInfos } from "../utils.ts";
 import { z } from "zod";
 
 type RpcResult<T> =
@@ -104,6 +104,39 @@ function check<Env extends Bindable, WNames extends Readonly<string[]>, T extend
     }
 }
 
+export type ToRpc<
+    WNames extends Readonly<string[]>,
+    T extends CreateContract<WNames>,
+    Env extends Bindable,
+    Namespace extends keyof T["namespaces"]
+> = {
+    [RpcName in keyof T["namespaces"][Namespace] as Env extends typeof altClient
+        ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends "client"
+            ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends `webview:${WNames[number]}`
+                ? `send${Capitalize<RpcName & string>}`
+                : GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends "server"
+                ? `send${Capitalize<RpcName & string>}`
+                : never
+            : never
+        : Env extends typeof altServer
+        ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends "server"
+            ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends "client"
+                ? `send${Capitalize<RpcName & string>}`
+                : GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends `webview:${WNames[number]}`
+                ? `send${Capitalize<RpcName & string>}`
+                : never
+            : never
+        : T["namespaces"][Namespace][RpcName]["flow"] extends "local"
+        ? `send${Capitalize<RpcName & string>}`
+        : GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends `webview:${WNames[number]}`
+        ? `send${Capitalize<RpcName & string>}`
+        : never]: Env extends typeof import("alt-server")
+        ? T["namespaces"][Namespace][RpcName]["flow"] extends "local"
+            ? AgnosticToRpc<WNames, T["namespaces"][Namespace][RpcName]>
+            : AltServerToRpc<WNames, T["namespaces"][Namespace][RpcName]>
+        : AgnosticToRpc<WNames, T["namespaces"][Namespace][RpcName]>;
+};
+
 export function buildToRpcs<
     Env extends Bindable,
     WNames extends Readonly<string[]>,
@@ -139,7 +172,8 @@ export function buildToRpcs<
                 continue;
             }
 
-            blob[namespace]![_rpcName] = (...args: unknown[]) => {
+            const transformedRpcName = `send${upperCaseFirstLetter(_rpcName)}`;
+            blob[namespace]![transformedRpcName] = (...args: unknown[]) => {
                 const t = Date.now();
 
                 if (
