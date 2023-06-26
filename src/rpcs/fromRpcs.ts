@@ -213,7 +213,7 @@ export function buildFromRpcs<
         for (const _rpcName in rpcNamespaces[namespace]) {
             const rpc = rpcNamespaces[namespace]![_rpcName]!;
 
-            const rpcInfos = getRpcInfos(rpc, _rpcName, bindings, opts);
+            const rpcInfos = getRpcInfos(rpc, namespace, _rpcName, bindings, opts);
             const { isAltServerEnv, rpcName, binding } = rpcInfos;
 
             if (!check(rpc, rpcInfos, bindings.env, opts)) {

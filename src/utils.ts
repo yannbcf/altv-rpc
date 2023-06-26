@@ -24,6 +24,7 @@ export function upperCaseFirstLetter(str: string): string {
 
 export function getRpcInfos<Env extends Bindable, WNames extends Readonly<string[]>, T extends RpcContract<[]>>(
     rpc: T[keyof T],
+    namespace: string,
     _rpcName: string,
     bindings: {
         env: Binding<Bindable>;
@@ -47,7 +48,7 @@ export function getRpcInfos<Env extends Bindable, WNames extends Readonly<string
             ? typeof rpc.internalEventName === "function"
                 ? `${rpc.internalEventName(_rpcName)}`
                 : `${rpc.internalEventName}`
-            : _rpcName;
+            : `${namespace}:${_rpcName}`;
 
     const binding =
         env === "client" && rpc.flow.includes("webview")
