@@ -1,5 +1,5 @@
-import { type AltServerFromRpc, type AgnosticFromRpc, buildFromRpcs } from "./fromRpcs.ts";
-import { type AltServerToRpc, type AgnosticToRpc, buildToRpcs } from "./toRpcs.ts";
+import { type AltServerFromRpc, type AgnosticFromRpc, buildFromRpcs, FromRpc } from "./fromRpcs.ts";
+import { type AltServerToRpc, type AgnosticToRpc, buildToRpcs, ToRpc } from "./toRpcs.ts";
 import { type Bindable, type Binding, overrideBind } from "./bind.ts";
 
 import type { StringLike, TypeCheckLevel, GetFlow } from "../types.ts";
@@ -30,6 +30,31 @@ function getCurrentEnvOverride<WName extends Readonly<string[]>>(
     return null;
 }
 
+function mergeObjects<T extends {}>(...objects: T[]): T {
+    return objects.reduce((acc, obj) => {
+        return {
+            ...acc,
+            ...obj,
+            ...Object.keys(acc).reduce((diff, key) => {
+                if (Object.hasOwn(obj, key)) {
+                    // @ts-expect-error we can safely ignore it
+                    diff[key] = mergeObjects(acc[key], obj[key]);
+                }
+
+                return diff;
+            }, {}),
+        };
+    }, {} as T);
+}
+
+type RpcNamespace<
+    WNames extends Readonly<string[]>,
+    WName extends WNames[number],
+    T extends CreateContract<WNames>,
+    Env extends Bindable,
+    Namespace extends keyof T["namespaces"]
+> = FromRpc<WNames, WName, T, Env, Namespace> & ToRpc<WNames, T, Env, Namespace>;
+
 export function useContract<
     WNames extends Readonly<string[]>,
     WName extends WNames[number],
@@ -58,76 +83,11 @@ export function useContract<
 
     const fromRpcs = buildFromRpcs(contract["namespaces"], bindings, opts);
     const toRpcs = buildToRpcs(contract["namespaces"], bindings, opts);
+    const mergedRpcs = mergeObjects(fromRpcs, toRpcs);
 
     return {
-        from: <Namespace extends StringLike<keyof T["namespaces"]>>(namespace: Namespace) => {
-            return fromRpcs[namespace] as {
-                // Putting that type as an external type caused type inference issues
-                [RpcName in keyof T["namespaces"][Namespace] as Env extends typeof altClient
-                    ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends "client"
-                        ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends `webview:${WNames[number]}`
-                            ? `on${Capitalize<RpcName & string>}`
-                            : GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends "server"
-                            ? `on${Capitalize<RpcName & string>}`
-                            : never
-                        : never
-                    : Env extends typeof altServer
-                    ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends "server"
-                        ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends "client"
-                            ? `on${Capitalize<RpcName & string>}`
-                            : GetFlow<
-                                  T["namespaces"][Namespace][RpcName]["flow"],
-                                  0
-                              > extends `webview:${WNames[number]}`
-                            ? `on${Capitalize<RpcName & string>}`
-                            : never
-                        : never
-                    : T["namespaces"][Namespace][RpcName]["flow"] extends "local"
-                    ? `on${Capitalize<RpcName & string>}`
-                    : GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends `webview:${WName}`
-                    ? `on${Capitalize<RpcName & string>}`
-                    : never]: (
-                    listener: Env extends typeof import("alt-server")
-                        ? T["namespaces"][Namespace][RpcName]["flow"] extends "local"
-                            ? AgnosticFromRpc<WNames, T["namespaces"][Namespace][RpcName]>
-                            : AltServerFromRpc<WNames, T["namespaces"][Namespace][RpcName]>
-                        : AgnosticFromRpc<WNames, T["namespaces"][Namespace][RpcName]>,
-                    opts?: { once?: true; typeCheckLevel?: TypeCheckLevel }
-                ) => void;
-            };
-        },
-        to: <Namespace extends StringLike<keyof T["namespaces"]>>(namespace: Namespace) => {
-            return toRpcs[namespace] as {
-                // Putting that type as an external type caused type inference issues
-                [RpcName in keyof T["namespaces"][Namespace] as Env extends typeof altClient
-                    ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends "client"
-                        ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends `webview:${WNames[number]}`
-                            ? RpcName
-                            : GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends "server"
-                            ? RpcName
-                            : never
-                        : never
-                    : Env extends typeof altServer
-                    ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends "server"
-                        ? GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 1> extends "client"
-                            ? RpcName
-                            : GetFlow<
-                                  T["namespaces"][Namespace][RpcName]["flow"],
-                                  1
-                              > extends `webview:${WNames[number]}`
-                            ? RpcName
-                            : never
-                        : never
-                    : T["namespaces"][Namespace][RpcName]["flow"] extends "local"
-                    ? RpcName
-                    : GetFlow<T["namespaces"][Namespace][RpcName]["flow"], 0> extends `webview:${WNames[number]}`
-                    ? RpcName
-                    : never]: Env extends typeof import("alt-server")
-                    ? T["namespaces"][Namespace][RpcName]["flow"] extends "local"
-                        ? AgnosticToRpc<WNames, T["namespaces"][Namespace][RpcName]>
-                        : AltServerToRpc<WNames, T["namespaces"][Namespace][RpcName]>
-                    : AgnosticToRpc<WNames, T["namespaces"][Namespace][RpcName]>;
-            };
+        ns: <Namespace extends StringLike<keyof T["namespaces"]>>(namespace: Namespace) => {
+            return mergedRpcs[namespace] as RpcNamespace<WNames, WName, T, Env, Namespace>;
         },
     };
 }
