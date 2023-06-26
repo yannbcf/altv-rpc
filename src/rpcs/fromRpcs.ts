@@ -235,9 +235,9 @@ export function buildFromRpcs<
                         ctx["player"] = args.shift() as altServer.Player;
                     }
 
-                    if (!argsParser) ctx["args"] = args;
+                    if (!argsParser) ctx["args"] = args[0];
                     else {
-                        const typedArgs = argsParser.safeParse(args);
+                        const typedArgs = argsParser.safeParse(args[0]);
                         if (!typedArgs.success) {
                             throw new Error(
                                 `[alt-rpc] The rpc <${rpcName}> args type checking issued: ${typedArgs.error.message}`
