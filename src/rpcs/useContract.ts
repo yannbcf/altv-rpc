@@ -1,21 +1,13 @@
-import { type AltServerFromRpc, type AgnosticFromRpc, buildFromRpcs, FromRpc } from "./fromRpcs.ts";
-import { type AltServerToRpc, type AgnosticToRpc, buildToRpcs, ToRpc } from "./toRpcs.ts";
 import { type Bindable, type Binding, overrideBind } from "./bind.ts";
-
-import type { StringLike, TypeCheckLevel, GetFlow } from "../types.ts";
 import type { CreateContract } from "./createContract.ts";
+import type { StringLike } from "../types.ts";
 
 import type * as altClient from "alt-client";
 import type * as altServer from "alt-server";
 
-// export function useContract<const T extends CreateContract, U extends { [K in keyof T]: ReturnType<typeof bind> }>(
-//     contract: T,
-//     bindings: U
-// ): void {
-//     //
-// }
-
+import { buildFromRpcs, FromRpc } from "./fromRpcs.ts";
 import { EventsCluter } from "../eventsCluter.ts";
+import { buildToRpcs, ToRpc } from "./toRpcs.ts";
 import { Bindings } from "./createContract.ts";
 
 function getCurrentEnvOverride<WName extends Readonly<string[]>>(
