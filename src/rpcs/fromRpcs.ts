@@ -229,12 +229,12 @@ export function buildFromRpcs<
                 const argsParser = rpc.args;
 
                 subscribe.bind(binding)(rpcName, (...args: unknown[]) => {
-                    const rpcTimestamp = `${rpcName}_${args.shift()}`;
                     const ctx: Record<string, AllowedAny> = {};
                     if (isAltServerEnv) {
                         ctx["player"] = args.shift() as altServer.Player;
                     }
 
+                    const rpcTimestamp = `${rpcName}_${args.shift()}`;
                     if (!argsParser) ctx["args"] = args[0];
                     else {
                         const typedArgs = argsParser.safeParse(args[0]);
